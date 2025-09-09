@@ -26,6 +26,10 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.get("/", (req, res) => {
+  res.send("App API is running 🚀");
+});
+
 app.use("/auth", authRoutes);
 app.use("/patients", patientRoutes);
 app.use("/bloodmetals", bloodMetalsRoutes);
