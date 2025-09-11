@@ -1,8 +1,12 @@
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
+from sklearn.impute import SimpleImputer
 
+
+# ---------------- Patient-level preprocessing ----------------
 def preprocess_hormone(patient: dict) -> pd.DataFrame:
-    blood = (patient.get("bloodMetals") or [{}])[0]
+    blood = (patient.get("BloodMetals") or [{}])[0]
 
     features = {
         "RIDEXPRG": 1 if patient.get("pregnancyStatus") else 0,
@@ -13,9 +17,108 @@ def preprocess_hormone(patient: dict) -> pd.DataFrame:
         "RIDAGEMN": patient.get("ageMonths", np.nan),
         "RHQ160": patient.get("pregnancyCount", np.nan),
         "LBDBMNSI": float(blood.get("manganese_umolL", np.nan)),
-        "RIAGENDR": 0 if patient.get("gender") == "male" else 1,
+        "RIAGENDR": 1 if patient.get("gender", "").lower() == "male" else 2,
     }
 
     df = pd.DataFrame([features])
     df.fillna(-999, inplace=True)
     return df
+
+
+def preprocess_domain_rules(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    is_male = df["RIAGENDR"] == 1
+    is_female = df["RIAGENDR"] == 2
+    age = df["RIDAGEMN"]
+
+    df.loc[is_male, "RIDEXPRG"] = 300
+    df.loc[is_female & (age < 20), "RIDEXPRG"] = 202
+    df.loc[is_female & (age > 44), "RIDEXPRG"] = 203
+
+    df = mark_male_nans(df, male_code=300)
+    return df
+
+
+def mark_male_nans(df: pd.DataFrame, rhq_prefixes=('RHQ', 'RHD'), male_code=300) -> pd.DataFrame:
+    df = df.copy()
+    rhq_cols = [col for col in df.columns if any(col.startswith(prefix) for prefix in rhq_prefixes)]
+    male_mask = df['RIAGENDR'] == 1
+    for col in rhq_cols:
+        df.loc[male_mask & df[col].isna(), col] = male_code
+    return df
+
+
+# ---------------- ML preprocessing pipeline ----------------
+def hormone_preprocessing_pipeline(df: pd.DataFrame, target_col: str, drop_cols=None):
+    df = df.copy()
+
+    # ----- Drop unwanted columns -----
+    if drop_cols:
+        drop_existing = [c for c in drop_cols if c in df.columns]
+        df.drop(columns=drop_existing, inplace=True)
+
+    # ----- Split features / target -----
+    X = df.drop(columns=[target_col])
+    y = df[target_col]
+
+    # ----- Identify column types -----
+    yes_no_cols = [
+        col for col in X.columns
+        if set(X[col].dropna().unique()).issubset({'yes', 'no', 'Yes', 'No', 'YES', 'NO'})
+    ]
+    cat_cols_oh = [
+        col for col in X.columns
+        if X[col].nunique() < 5 and col not in yes_no_cols and X[col].dtype == 'object'
+    ]
+    numeric_cols = X.select_dtypes(include=np.number).columns.tolist()
+    high_card_cols = [col for col in numeric_cols if X[col].nunique() > 30]
+    low_card_num_cols = [col for col in numeric_cols if X[col].nunique() <= 30]
+
+    yes_no_imputer = SimpleImputer(strategy='most_frequent')
+    cat_imputer = SimpleImputer(strategy='most_frequent')
+    num_imputer = SimpleImputer(strategy='most_frequent')
+
+    # ----- Encode yes/no -----
+    if yes_no_cols:
+        X_yes_no_imp = yes_no_imputer.fit_transform(X[yes_no_cols])
+        X_yes_no = pd.DataFrame(X_yes_no_imp, columns=yes_no_cols)
+        for col in yes_no_cols:
+            X_yes_no[col] = X_yes_no[col].str.lower().map({'yes': 1, 'no': 0})
+    else:
+        X_yes_no = pd.DataFrame()
+
+    # ----- One-hot encode categorical -----
+    if cat_cols_oh:
+        X_cat_imp = cat_imputer.fit_transform(X[cat_cols_oh])
+        X_cat = pd.DataFrame(X_cat_imp, columns=cat_cols_oh)
+        ohe = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+        X_cat_ohe = pd.DataFrame(ohe.fit_transform(X_cat), columns=ohe.get_feature_names_out(cat_cols_oh))
+    else:
+        X_cat_ohe = pd.DataFrame()
+
+    # ----- Scale high-cardinality numeric -----
+    if high_card_cols:
+        X_high_card_imp = num_imputer.fit_transform(X[high_card_cols])
+        scaler = MinMaxScaler()
+        X_high_card = pd.DataFrame(scaler.fit_transform(X_high_card_imp), columns=high_card_cols)
+    else:
+        X_high_card = pd.DataFrame()
+
+    # ----- Keep low-cardinality numeric as is -----
+    if low_card_num_cols:
+        X_low_card_imp = num_imputer.fit_transform(X[low_card_num_cols])
+        X_low_card_num = pd.DataFrame(X_low_card_imp, columns=low_card_num_cols)
+    else:
+        X_low_card_num = pd.DataFrame()
+
+    # ----- Final dataset -----
+    X_processed = pd.concat([X_yes_no, X_cat_ohe, X_high_card, X_low_card_num], axis=1)
+    return X_processed, y
+
+
+# ---------------- Full pipeline: patient → ML-ready X,y ----------------
+def preprocess_patient_for_hormone_prediction(patient: dict, target_col: str, drop_cols=None):
+    df = preprocess_hormone(patient)
+    df = preprocess_domain_rules(df)
+    X, y = hormone_preprocessing_pipeline(df, target_col=target_col, drop_cols=drop_cols)
+    return X, y

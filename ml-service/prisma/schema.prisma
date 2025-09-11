@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BloodMetals {
+  id              String   @id
+  patientId       String
+  cadmium_umolL   Float?
+  createdAt       DateTime @default(now())
+  lead_umolL      Float?
+  manganese_umolL Float?
+  mercury_umolL   Float?
+  selenium_umolL  Float?
+  Patient         Patient  @relation(fields: [patientId], references: [id])
+}
+
+model Patient {
+  id              String        @id
+  name            String
+  diagnosis       String?
+  doctorId        String
+  ageMonths       Int?
+  ageYears        Int
+  gender          String
+  pregnancyCount  Int?
+  pregnancyStatus Boolean?
+  BloodMetals     BloodMetals[]
+  User            User          @relation(fields: [doctorId], references: [id])
+}
+
+model User {
+  id       String    @id
+  email    String    @unique
+  password String?
+  name     String?
+  googleId String?   @unique
+  Patient  Patient[]
+}
