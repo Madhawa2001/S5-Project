@@ -1,0 +1,10 @@
+# Ignore Python virtual environment
+myenv/
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Environment variables
+.env
