@@ -7,25 +7,51 @@ const prisma = new PrismaClient();
 
 router.use(verifyToken);
 
-// Add blood metals for a patient
+// ✅ Add a new blood metals report for a patient
 router.post("/:patientId", async (req, res) => {
-  const { patientId } = req.params;
-  const { lead, mercury, cadmium, arsenic, chromium } = req.body;
+  try {
+    const { patientId } = req.params;
+    const {
+      lead_umolL,
+      mercury_umolL,
+      cadmium_umolL,
+      selenium_umolL,
+      manganese_umolL,
+    } = req.body;
 
-  const bloodMetals = await prisma.bloodMetals.create({
-    data: { patientId, lead, mercury, cadmium, arsenic, chromium },
-  });
+    const bloodMetals = await prisma.bloodMetals.create({
+      data: {
+        patientId,
+        lead_umolL,
+        mercury_umolL,
+        cadmium_umolL,
+        selenium_umolL,
+        manganese_umolL,
+      },
+    });
 
-  res.json(bloodMetals);
+    res.json(bloodMetals);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to add blood metals", details: error });
+  }
 });
 
-// Get blood metals for a patient
+// ✅ Get all blood metals reports for a patient
 router.get("/:patientId", async (req, res) => {
-  const { patientId } = req.params;
-  const bloodMetals = await prisma.bloodMetals.findUnique({
-    where: { patientId },
-  });
-  res.json(bloodMetals);
+  try {
+    const { patientId } = req.params;
+    const reports = await prisma.bloodMetals.findMany({
+      where: { patientId },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(reports);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch blood metals", details: error });
+  }
 });
 
 export default router;

@@ -7,21 +7,66 @@ const prisma = new PrismaClient();
 
 router.use(verifyToken);
 
-// Add patient
+// ✅ Add a patient
 router.post("/", async (req, res) => {
-  const { name, age, diagnosis } = req.body;
-  const patient = await prisma.patient.create({
-    data: { name, age, diagnosis, doctorId: req.user.userId },
-  });
-  res.json(patient);
+  try {
+    const {
+      name,
+      ageYears,
+      ageMonths,
+      gender,
+      pregnancyCount,
+      pregnancyStatus,
+      diagnosis,
+    } = req.body;
+
+    const patient = await prisma.patient.create({
+      data: {
+        name,
+        ageYears,
+        ageMonths,
+        gender,
+        pregnancyCount,
+        pregnancyStatus,
+        diagnosis,
+        doctorId: req.user.userId,
+      },
+    });
+
+    res.json(patient);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to add patient", details: error });
+  }
 });
 
-// Get all patients for logged-in doctor
+// ✅ Get all patients for logged-in doctor
 router.get("/", async (req, res) => {
-  const patients = await prisma.patient.findMany({
-    where: { doctorId: req.user.userId },
-  });
-  res.json(patients);
+  try {
+    const patients = await prisma.patient.findMany({
+      where: { doctorId: req.user.userId },
+      include: { bloodMetals: true }, // ✅ include reports if needed
+    });
+    res.json(patients);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch patients", details: error });
+  }
+});
+
+// ✅ Get a single patient (with reports)
+router.get("/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      include: { bloodMetals: true },
+    });
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+    res.json(patient);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch patient", details: error });
+  }
 });
 
 export default router;

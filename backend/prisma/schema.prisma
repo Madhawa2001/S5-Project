@@ -8,31 +8,39 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid())
-  email    String  @unique
-  password String?
-  name     String?
-  googleId String? @unique
-  patients Patient[]
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String?
+  name      String?
+  googleId  String?   @unique
+  patients  Patient[]
 }
 
 model Patient {
-  id        String   @id @default(cuid())
-  name      String
-  age       Int
-  diagnosis String?
-  doctorId  String
-  doctor    User @relation(fields: [doctorId], references: [id])
-  bloodMetals BloodMetals?
+  id             String        @id @default(cuid())
+  name           String
+  ageYears       Int
+  ageMonths      Int?          // from RIDAGEMN
+  gender         String        // from RIAGENDR
+  pregnancyCount Int?          // from RHQ160
+  pregnancyStatus Boolean?     // from RIDEXPRG
+  diagnosis      String?
+  doctorId       String
+  doctor         User          @relation(fields: [doctorId], references: [id])
+  bloodMetals    BloodMetals[]
 }
 
 model BloodMetals {
-  id        String   @id @default(cuid())
-  lead      Float
-  mercury   Float
-  cadmium   Float
-  arsenic   Float
-  chromium  Float
-  patientId String   @unique
-  patient   Patient  @relation(fields: [patientId], references: [id])
+  id             String   @id @default(cuid())
+  patientId      String
+  patient        Patient  @relation(fields: [patientId], references: [id])
+
+  // metals (in µmol/L)
+  lead_umolL     Float?   // LBDBPBSI
+  cadmium_umolL  Float?   // LBDBCDSI
+  mercury_umolL  Float?   // LBDTHGSI
+  selenium_umolL Float?   // LBDBSESI
+  manganese_umolL Float?  // LBDBMNSI
+
+  createdAt      DateTime @default(now())
 }
