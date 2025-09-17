@@ -12,7 +12,7 @@ async def predict_hormone(patient_id: str):
     #print(patient)
 
     # 🔮 Dummy prediction (later load real model here)
-    prediction = 0.75  
+    prediction = 0.75
 
     return HormonePredictionResponse(
         patient_id=patient_id,
