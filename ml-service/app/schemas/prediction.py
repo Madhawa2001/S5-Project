@@ -16,6 +16,7 @@ class PatientFeatures_Hormone(BaseModel):
     manganese_umolL: Optional[float] = None
 
     RHQ200: Optional[str] = None        # "yes"/"no" → breastfeeding
+    RHQ031: Optional[str] = None        # "yes"/"no" → regular periods
     is_menopausal: Optional[str] = None # "yes"/"no"
     BMXBMI: Optional[float] = None      # BMI
     BMDSADCM: Optional[float] = None    # Abdomen diameter
