@@ -1,3 +1,4 @@
+# app/preprocess/hormoneModel_preprocessor.py
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
@@ -25,11 +26,18 @@ def preprocess_hormone(patient) -> pd.DataFrame:
         "RHQ160": patient.get("pregnancyCount", np.nan),
         "LBDBMNSI": float(blood.get("manganese_umolL", np.nan)),
         "RIAGENDR": 1 if str(patient.get("gender", "")).lower() == "male" else 2,
+
+        # ✅ Additional features
+        "RHQ200": patient.get("RHQ200", np.nan),           # breastfeeding
+        "is_menopausal": patient.get("is_menopausal", np.nan),
+        "BMXBMI": patient.get("BMXBMI", np.nan),
+        "BMDSADCM": patient.get("BMDSADCM", np.nan),
     }
 
     df = pd.DataFrame([features])
-    df.fillna(-999, inplace=True)
+    df.replace({None: np.nan}, inplace=True)
     return df
+
 
 def preprocess_domain_rules(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
@@ -37,6 +45,7 @@ def preprocess_domain_rules(df: pd.DataFrame) -> pd.DataFrame:
     is_female = df["RIAGENDR"] == 2
     age = df["RIDAGEMN"]
 
+    # Adjust pregnancy code
     df.loc[is_male, "RIDEXPRG"] = 300
     df.loc[is_female & (age < 20), "RIDEXPRG"] = 202
     df.loc[is_female & (age > 44), "RIDEXPRG"] = 203
@@ -53,6 +62,7 @@ def mark_male_nans(df: pd.DataFrame, rhq_prefixes=('RHQ', 'RHD'), male_code=300)
         df.loc[male_mask & df[col].isna(), col] = male_code
     return df
 
+
 def hormone_preprocessing_pipeline(df: pd.DataFrame, drop_cols=None) -> pd.DataFrame:
     df = df.copy()
 
@@ -64,11 +74,15 @@ def hormone_preprocessing_pipeline(df: pd.DataFrame, drop_cols=None) -> pd.DataF
     # ----- Identify column types -----
     yes_no_cols = [
         col for col in df.columns
-        if set(df[col].dropna().unique()).issubset({'yes', 'no', 'Yes', 'No', 'YES', 'NO'})
+        if set(df[col].dropna().astype(str).unique()).issubset(
+            {'yes', 'no', 'Yes', 'No', 'YES', 'NO'}
+        )
     ]
     cat_cols_oh = [
         col for col in df.columns
-        if df[col].nunique() < 5 and col not in yes_no_cols and df[col].dtype == 'object'
+        if df[col].dtype == 'object'
+        and col not in yes_no_cols
+        and df[col].nunique() < 5
     ]
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
     high_card_cols = [col for col in numeric_cols if df[col].nunique() > 30]
@@ -121,5 +135,4 @@ def preprocess_patient_for_hormone_prediction(patient: dict, drop_cols=None) -> 
     df = preprocess_hormone(patient)
     df = preprocess_domain_rules(df)
     X = hormone_preprocessing_pipeline(df, drop_cols=drop_cols)
-    print(X)
     return X
