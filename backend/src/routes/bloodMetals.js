@@ -1,14 +1,16 @@
+// routes/bloodMetals.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { verifyToken } from "../middleware/auth.js";
+import { verifyToken, requireRole } from "../middleware/auth.js";
+import { audit } from "../middleware/audit.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-router.use(verifyToken);
+router.use(verifyToken, requireRole("doctor"));
 
-// ✅ Add a new blood metals report for a patient
-router.post("/:patientId", async (req, res) => {
+// Add a new blood metals report for a patient
+router.post("/:patientId", audit("CREATE_BLOODMETALS"), async (req, res) => {
   try {
     const { patientId } = req.params;
     const {
@@ -18,6 +20,13 @@ router.post("/:patientId", async (req, res) => {
       selenium_umolL,
       manganese_umolL,
     } = req.body;
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+    });
+    if (!patient) return res.status(404).json({ error: "Patient not found" });
+    if (patient.doctorId !== req.user.userId)
+      return res.status(403).json({ error: "Forbidden" });
 
     const bloodMetals = await prisma.bloodMetals.create({
       data: {
@@ -34,14 +43,21 @@ router.post("/:patientId", async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Failed to add blood metals", details: error });
+      .json({ error: "Failed to add blood metals", details: String(error) });
   }
 });
 
-// ✅ Get all blood metals reports for a patient
-router.get("/:patientId", async (req, res) => {
+// Get all blood metals reports for a patient
+router.get("/:patientId", audit("LIST_BLOODMETALS"), async (req, res) => {
   try {
     const { patientId } = req.params;
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+    });
+    if (!patient) return res.status(404).json({ error: "Patient not found" });
+    if (patient.doctorId !== req.user.userId)
+      return res.status(403).json({ error: "Forbidden" });
+
     const reports = await prisma.bloodMetals.findMany({
       where: { patientId },
       orderBy: { createdAt: "desc" },
@@ -50,7 +66,7 @@ router.get("/:patientId", async (req, res) => {
   } catch (error) {
     res
       .status(500)
-      .json({ error: "Failed to fetch blood metals", details: error });
+      .json({ error: "Failed to fetch blood metals", details: String(error) });
   }
 });
 
