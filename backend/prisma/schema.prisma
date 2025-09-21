@@ -35,7 +35,6 @@ model UserRole {
   createdAt DateTime   @default(now())
 }
 
-
 model Patient {
   id              String        @id @default(cuid())
   name            String

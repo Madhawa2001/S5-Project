@@ -1,21 +1,21 @@
 from fastapi import FastAPI
-from app.core.db import init_db, close_db
-from app.routers import hormone
-from contextlib import asynccontextmanager
+from app.routes.predict import router as predict_router
+from dotenv import load_dotenv
+import os
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await init_db()
-    try:
-        yield
-    finally:
-        await close_db()
+# Load env variables
+load_dotenv()
 
-app = FastAPI(title="ML Service with Prisma DB", lifespan=lifespan)
+app = FastAPI(title="ML Prediction Service")
 
-# Register routers
-app.include_router(hormone.router)
+# Register routes
+app.include_router(predict_router, prefix="/predict", tags=["Prediction"])
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=os.getenv("ML_HOST", "127.0.0.1"),
+        port=int(os.getenv("ML_PORT", 8002)),
+        reload=True
+    )

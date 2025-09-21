@@ -11,6 +11,7 @@ import patientRoutes from "./routes/patients.js";
 import bloodMetalsRoutes from "./routes/bloodMetals.js";
 import adminRoutes from "./routes/admin.js";
 import { globalLimiter } from "./middleware/rateLimit.js";
+import mlRoutes from "./routes/ml.js";
 
 const app = express();
 // dotenv.config();
@@ -46,6 +47,7 @@ app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/patients", patientRoutes);
 app.use("/bloodmetals", bloodMetalsRoutes);
+app.use("/ml", mlRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
