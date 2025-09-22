@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer
 import jwt, os
 
 security = HTTPBearer()
-JWT_SECRET = os.getenv("JWT_SECRET", "changeme")
+JWT_SECRET = os.getenv("JWT_SECRET", "this_is_a_long_secret_value")
 
 def verify_jwt(credentials = Depends(security)):
     token = credentials.credentials

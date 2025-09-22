@@ -27,9 +27,9 @@ router.post(
         }
 
         // 2️⃣ Fetch from Prisma/Postgres
-        const patient = await db.patient.findUnique({
+        const patient = await prisma.patient.findUnique({
           where: { id: patientId },
-          include: { BloodMetals: { orderBy: { createdAt: "desc" } } },
+          include: { bloodMetals: { orderBy: { createdAt: "desc" } } },
         });
 
         if (!patient) {
