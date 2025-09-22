@@ -2,9 +2,11 @@ import express from "express";
 import axios from "axios";
 import { verifyToken, requireRole } from "../middleware/auth.js";
 import { audit } from "../middleware/audit.js";
-import db from "../prisma/db.js"; // your Prisma client
+// import db from "../prisma/db.js";
+import { PrismaClient } from "@prisma/client";
 
 const router = express.Router();
+const prisma = new PrismaClient();
 
 router.post(
   "/:model/:method",
