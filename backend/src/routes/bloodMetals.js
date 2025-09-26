@@ -39,6 +39,45 @@ router.post("/:patientId", audit("CREATE_BLOODMETALS"), async (req, res) => {
       },
     });
 
+    // 🔹 Fetch full patient with features
+    const fullPatient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      include: { bloodMetals: { orderBy: { createdAt: "desc" } } },
+    });
+
+    // 🔹 Call FastAPI prediction service
+    try {
+      // hormone (all 3 in one call)
+      await axios.post(
+        `${process.env.ML_SERVICE_URL}/predict/hormone`,
+        { features: fullPatient },
+        { headers: { Authorization: req.headers.authorization } }
+      );
+
+      // infertility
+      await axios.post(
+        `${process.env.ML_SERVICE_URL}/predict/infertility`,
+        { features: fullPatient },
+        { headers: { Authorization: req.headers.authorization } }
+      );
+
+      // menstrual
+      await axios.post(
+        `${process.env.ML_SERVICE_URL}/predict/menstrual`,
+        { features: fullPatient },
+        { headers: { Authorization: req.headers.authorization } }
+      );
+
+      // menopause
+      await axios.post(
+        `${process.env.ML_SERVICE_URL}/predict/menopause`,
+        { features: fullPatient },
+        { headers: { Authorization: req.headers.authorization } }
+      );
+    } catch (err) {
+      console.error("Auto prediction failed:", err.message);
+    }
+
     res.json(bloodMetals);
   } catch (error) {
     res
