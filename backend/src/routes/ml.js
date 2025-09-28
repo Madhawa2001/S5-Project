@@ -1,8 +1,10 @@
-// routes/predict.js
+// backend/src/routes/ml.js
+
 import express from "express";
 import axios from "axios";
 import { verifyToken, requireRole } from "../middleware/auth.js";
 import { audit } from "../middleware/audit.js";
+// import db from "../prisma/db.js";
 import { PrismaClient } from "@prisma/client";
 
 const router = express.Router();
@@ -16,61 +18,40 @@ router.post(
   async (req, res) => {
     try {
       const { model, method } = req.params;
+
       let payload = req.body;
 
-      // If method === "db" we must fetch patient from the DB and build features here (per your request)
       if (method === "db") {
+        // 1️⃣ Get patientId from request
         const { patientId } = req.body;
-        if (!patientId)
+        if (!patientId) {
           return res.status(400).json({ error: "patientId required" });
+        }
 
-        // fetch patient and latest bloodMetals (if any). Adjust include fields if your patient has more features.
+        // 2️⃣ Fetch from Prisma/Postgres
         const patient = await prisma.patient.findUnique({
           where: { id: patientId },
-          include: { bloodMetals: { orderBy: { createdAt: "desc" }, take: 1 } },
+          include: { bloodMetals: { orderBy: { createdAt: "desc" } } },
         });
 
-        if (!patient)
+        if (!patient) {
           return res.status(404).json({ error: "Patient not found" });
+        }
 
-        const latestBloodMetals =
-          patient.bloodMetals && patient.bloodMetals.length
-            ? patient.bloodMetals[0]
-            : null;
-
-        // Build features dict to send to ML service.
-        // IMPORTANT: we simply merge patient fields + latestBloodMetals fields.
-        // Your DB must store feature column-names that match what the model expects (e.g. "RIDAGEMN", "RIAGENDR", etc.)
-        // If your DB uses different names, add mapping logic here.
-        const features = {
-          ...patient,
-          ...(latestBloodMetals || {}),
-        };
-
-        // remove Prisma metadata fields that ML service doesn't need
-        // (id fields for relations, createdAt, updatedAt, etc.)
-        delete features.id;
-        delete features.createdAt;
-        delete features.updatedAt;
-        delete features.doctorId;
-        delete features.bloodMetals; // it's nested array
-
-        payload = { features };
+        // 3️⃣ Build payload to send to FastAPI
+        payload = { features: patient };
       }
 
-      // forward to fastapi
+      // 4️⃣ Forward to FastAPI
       const response = await axios.post(
-        `${process.env.ML_SERVICE_URL}/predict/${model}/${method}`,
+        `${process.env.ML_SERVICE_URL}/predict/${model}`,
         payload,
         { headers: { Authorization: req.headers.authorization } }
       );
 
-      return res.json(response.data);
+      res.json(response.data);
     } catch (err) {
-      console.error(
-        "Prediction service error:",
-        err?.response?.data || err.message
-      );
+      console.error("Prediction service error:", err.message);
       res.status(500).json({
         error: "Prediction service error",
         details: err.response?.data || err.message,

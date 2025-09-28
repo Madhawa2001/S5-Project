@@ -62,7 +62,7 @@ def preprocess_domain_rules(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[is_female & (age < 20), "RIDEXPRG"] = 202
     df.loc[is_female & (age > 44), "RIDEXPRG"] = 203
 
-    df = mark_male_nans(df, male_code=300)
+    df = mark_male_nans(df, male_code=-1)
     return df
 
 

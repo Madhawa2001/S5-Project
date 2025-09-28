@@ -8,6 +8,7 @@ import os
 # Load env variables
 load_dotenv()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
@@ -16,7 +17,7 @@ async def lifespan(app: FastAPI):
     finally:
         await close_db()
 
-app = FastAPI(title="ML Prediction Service")
+app = FastAPI(title="ML Prediction Service",lifespan=lifespan)
 
 # Register routes
 app.include_router(predict_router, prefix="/predict", tags=["Prediction"])

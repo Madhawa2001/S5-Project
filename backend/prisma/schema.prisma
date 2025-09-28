@@ -47,6 +47,7 @@ model Patient {
   doctorId        String
   doctor          User          @relation(fields: [doctorId], references: [id])
   bloodMetals     BloodMetals[]
+  predictions     Prediction[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
