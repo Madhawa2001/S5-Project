@@ -8,39 +8,83 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String     @id @default(cuid())
+  email     String     @unique
   password  String?
   name      String?
-  googleId  String?   @unique
+  googleId  String?    @unique
+  isActive  Boolean    @default(false)
+  roles     UserRole[]
   patients  Patient[]
+  createdAt DateTime   @default(now())
+}
+
+model Role {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  users     UserRole[]
+  createdAt DateTime   @default(now())
+}
+
+model UserRole {
+  id        String     @id @default(cuid())
+  userId    String
+  roleId    String
+  user      User       @relation(fields: [userId], references: [id])
+  role      Role       @relation(fields: [roleId], references: [id])
+  createdAt DateTime   @default(now())
 }
 
 model Patient {
-  id             String        @id @default(cuid())
-  name           String
-  ageYears       Int
-  ageMonths      Int?          // from RIDAGEMN
-  gender         String        // from RIAGENDR
-  pregnancyCount Int?          // from RHQ160
-  pregnancyStatus Boolean?     // from RIDEXPRG
-  diagnosis      String?
-  doctorId       String
-  doctor         User          @relation(fields: [doctorId], references: [id])
-  bloodMetals    BloodMetals[]
+  id              String        @id @default(cuid())
+  name            String
+  ageYears        Int
+  ageMonths       Int?
+  gender          String
+  pregnancyCount  Int?
+  pregnancyStatus Boolean?
+  diagnosis       String?
+  doctorId        String
+  doctor          User          @relation(fields: [doctorId], references: [id])
+  bloodMetals     BloodMetals[]
+  predictions     Prediction[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 model BloodMetals {
-  id             String   @id @default(cuid())
-  patientId      String
-  patient        Patient  @relation(fields: [patientId], references: [id])
+  id              String   @id @default(cuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
 
-  // metals (in µmol/L)
-  lead_umolL     Float?   // LBDBPBSI
-  cadmium_umolL  Float?   // LBDBCDSI
-  mercury_umolL  Float?   // LBDTHGSI
-  selenium_umolL Float?   // LBDBSESI
-  manganese_umolL Float?  // LBDBMNSI
+  lead_umolL      Float?
+  cadmium_umolL   Float?
+  mercury_umolL   Float?
+  selenium_umolL  Float?
+  manganese_umolL Float?
 
-  createdAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Prediction {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id])
+
+  model      String   // e.g. "hormone_testosterone", "infertility"
+  value      Float
+
+  createdAt  DateTime @default(now())
+}
+
+
+model AccessLog {
+  id          String   @id @default(cuid())
+  userId      String?  // nullable if unauthenticated action
+  action      String   // e.g. "READ_PATIENT", "CREATE_BLOODMETALS", "LOGIN"
+  resource    String?  // e.g. patientId or endpoint path
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
 }

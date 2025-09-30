@@ -1,14 +1,17 @@
+// routes/patients.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { verifyToken } from "../middleware/auth.js";
+import { verifyToken, requireRole } from "../middleware/auth.js";
+import { audit } from "../middleware/audit.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-router.use(verifyToken);
+// only approved doctors can use patient routes
+router.use(verifyToken, requireRole("doctor"));
 
 // ✅ Add a patient
-router.post("/", async (req, res) => {
+router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
   try {
     const {
       name,
@@ -35,37 +38,44 @@ router.post("/", async (req, res) => {
 
     res.json(patient);
   } catch (error) {
-    res.status(500).json({ error: "Failed to add patient", details: error });
+    res
+      .status(500)
+      .json({ error: "Failed to add patient", details: String(error) });
   }
 });
 
 // ✅ Get all patients for logged-in doctor
-router.get("/", async (req, res) => {
+router.get("/", audit("LIST_PATIENTS"), async (req, res) => {
   try {
     const patients = await prisma.patient.findMany({
       where: { doctorId: req.user.userId },
-      include: { bloodMetals: true }, // ✅ include reports if needed
+      include: { bloodMetals: true },
     });
     res.json(patients);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch patients", details: error });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch patients", details: String(error) });
   }
 });
 
-// ✅ Get a single patient (with reports)
-router.get("/:patientId", async (req, res) => {
+// ✅ Get a single patient (verify ownership)
+router.get("/:patientId", audit("READ_PATIENT"), async (req, res) => {
   try {
     const { patientId } = req.params;
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
       include: { bloodMetals: true },
     });
-    if (!patient) {
-      return res.status(404).json({ error: "Patient not found" });
-    }
+    if (!patient) return res.status(404).json({ error: "Patient not found" });
+    if (patient.doctorId !== req.user.userId)
+      return res.status(403).json({ error: "Forbidden" });
+
     res.json(patient);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch patient", details: error });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch patient", details: String(error) });
   }
 });
 

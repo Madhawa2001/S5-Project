@@ -3,7 +3,15 @@ import joblib
 import pandas as pd
 from .base_model import BaseModel
 
-class JoblibModel(BaseModel):
+class JoblibModel:
+    def __init__(self, path):
+        self.model = joblib.load(path)
+
+    def predict(self, df: pd.DataFrame):
+        return self.model.predict(df)
+
+
+class JoblibModel2(BaseModel):
     def __init__(self, path, preprocess_fn):
         self.model = joblib.load(path)
         self.preprocess_fn = preprocess_fn
