@@ -4,6 +4,8 @@ import { createContext, useContext, useState, useEffect } from "react"
 
 const AuthContext = createContext()
 
+const API_BASE_URL = "http://localhost:5000"
+
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
@@ -76,6 +78,50 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, role = "user") => {
     try {
+      // Try real backend API first
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+
+        // Backend returns { accessToken, refreshToken, user }
+        if (data.accessToken) {
+          // Extract user info from JWT token
+          const tokenPayload = JSON.parse(atob(data.accessToken.split(".")[1]))
+
+          // Determine role from token payload (backend includes roles array)
+          const userRole = tokenPayload.roles?.some((r) => r.role?.name === "admin") ? "admin" : "user"
+
+          const userData = {
+            id: tokenPayload.userId,
+            email: tokenPayload.email,
+            name: tokenPayload.name || email,
+            role: userRole,
+          }
+
+          setToken(data.accessToken)
+          setUser(userData)
+          setIsLoggedIn(true)
+          localStorage.setItem("authToken", data.accessToken)
+          localStorage.setItem("refreshToken", data.refreshToken)
+          localStorage.setItem("user", JSON.stringify(userData))
+
+          return { success: true, isDummy: false, user: userData }
+        }
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Login failed")
+      }
+    } catch (error) {
+      console.error("Backend login error:", error)
+
+      // Fallback to dummy credentials if backend is not available
       const dummyCred = DUMMY_CREDENTIALS[role]
       if (dummyCred && email === dummyCred.email && password === dummyCred.password) {
         const dummyToken = `dummy_${role}_${Date.now()}`
@@ -89,39 +135,40 @@ export const AuthProvider = ({ children }) => {
         return { success: true, isDummy: true, user: dummyUser }
       }
 
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password, role }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Login failed")
-      }
-
-      const data = await response.json()
-
-      if (data.token && data.user) {
-        setToken(data.token)
-        setUser(data.user)
-        setIsLoggedIn(true)
-        localStorage.setItem("authToken", data.token)
-        localStorage.setItem("user", JSON.stringify(data.user))
-        return { success: true, isDummy: false, user: data.user }
-      } else {
-        throw new Error("Invalid response format")
-      }
-    } catch (error) {
-      console.error("Login error:", error)
       return { success: false, error: error.message }
     }
   }
 
   const register = async (userData) => {
     try {
+      // Try real backend API first
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          password: userData.password,
+          name: userData.name,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return {
+          success: true,
+          message: data.message || "Registration request submitted. Please wait for admin approval.",
+          isDummy: false,
+        }
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Registration failed")
+      }
+    } catch (error) {
+      console.error("Backend registration error:", error)
+
+      // Fallback to dummy response if backend is not available
       if (token && token.startsWith("dummy_")) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         return {
@@ -131,23 +178,6 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Registration failed")
-      }
-
-      const data = await response.json()
-      return { success: true, message: data.message, isDummy: false }
-    } catch (error) {
-      console.error("Registration error:", error)
       return { success: false, error: error.message }
     }
   }
@@ -157,6 +187,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null)
     setUser(null)
     localStorage.removeItem("authToken")
+    localStorage.removeItem("refreshToken")
     localStorage.removeItem("user")
   }
 

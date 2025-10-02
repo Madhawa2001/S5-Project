@@ -10,9 +10,9 @@ export default function Register() {
     email: "",
     password: "",
     confirmPassword: "",
-    phone: "",
-    specialization: "",
-    licenseNumber: "",
+    // phone: "",
+    // specialization: "",
+    // licenseNumber: "",
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -49,9 +49,9 @@ export default function Register() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        phone: formData.phone,
-        specialization: formData.specialization,
-        licenseNumber: formData.licenseNumber,
+        // phone: formData.phone,
+        // specialization: formData.specialization,
+        // licenseNumber: formData.licenseNumber,
         role: "user",
       })
 
@@ -117,7 +117,7 @@ export default function Register() {
                 placeholder="Enter your full name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 required
                 disabled={loading}
               />
@@ -134,13 +134,13 @@ export default function Register() {
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 required
                 disabled={loading}
               />
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <label htmlFor="phone" className="block text-sm font-medium text-green-700">
                 Phone Number *
               </label>
@@ -151,7 +151,7 @@ export default function Register() {
                 placeholder="Enter your phone number"
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 required
                 disabled={loading}
               />
@@ -168,7 +168,7 @@ export default function Register() {
                 placeholder="e.g., Gynecology, Obstetrics"
                 value={formData.specialization}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 required
                 disabled={loading}
               />
@@ -185,11 +185,11 @@ export default function Register() {
                 placeholder="Enter your medical license number"
                 value={formData.licenseNumber}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 required
                 disabled={loading}
               />
-            </div>
+            </div> */}
 
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-green-700">
@@ -202,7 +202,7 @@ export default function Register() {
                 placeholder="Create a password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 required
                 disabled={loading}
               />
@@ -219,7 +219,7 @@ export default function Register() {
                 placeholder="Confirm your password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 required
                 disabled={loading}
               />
