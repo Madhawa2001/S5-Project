@@ -8,5 +8,9 @@ env/
 .venv/
 .env/
 
+# Env files
+.env
+.env.*.local
+
 # Environment variables
 .env
