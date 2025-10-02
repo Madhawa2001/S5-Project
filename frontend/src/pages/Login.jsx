@@ -11,7 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [role, setRole] = useState("user") // 'admin' or 'user'
+  const [role, setRole] = useState("doctor") // 'admin' or 'doctor'
   const navigate = useNavigate()
   const { login } = useAuth()
 
@@ -51,14 +51,14 @@ export default function Login() {
           <div className="flex items-center justify-center gap-2 p-1 bg-green-50 rounded-lg">
             <button
               type="button"
-              onClick={() => setRole("user")}
+              onClick={() => setRole("doctor")}
               className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
-                role === "user"
+                role === "doctor"
                   ? "bg-green-600 text-white shadow-sm"
                   : "bg-transparent text-green-700 hover:bg-green-100"
               }`}
             >
-              User
+              Doctor
             </button>
             <button
               type="button"
@@ -88,7 +88,7 @@ export default function Login() {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                 required
                 disabled={loading}
               />
@@ -103,17 +103,17 @@ export default function Login() {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-black"
                 required
                 disabled={loading}
               />
             </div>
 
-            <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
+            {/* <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
               <p className="font-medium mb-1">Test Credentials:</p>
               <p>Admin: admin@test.com / admin123</p>
-              <p>User: user@test.com / user123</p>
-            </div>
+              <p>Doctor: doctor@test.com / doctor123</p>
+            </div> */}
 
             <button
               type="submit"
@@ -186,14 +186,14 @@ export default function Login() {
             Sign in with Google
           </button>
 
-          {role === "user" && (
+          {role === "doctor" && (
             <div className="text-center">
               <p className="text-sm text-green-600 mb-2">Don't have an account?</p>
               <button
                 onClick={() => navigate("/register")}
                 className="w-full border border-green-600 text-green-700 hover:bg-green-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors"
               >
-                Register as New User
+                Register as New Doctor
               </button>
             </div>
           )}

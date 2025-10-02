@@ -11,45 +11,58 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
+  // Fetch patients on component mount
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login")
       return
     }
 
-    const fetchPatients = async () => {
-      try {
-        setLoading(true)
-        const endpoint = user?.role === "admin" ? "/api/patients" : "/api/patients/assigned"
-        const response = await authenticatedFetch(endpoint)
-
-        if (response.ok) {
-          const data = await response.json()
-          setPatients(data.patients || [])
-        } else {
-          throw new Error("Failed to fetch patients")
-        }
-      } catch (err) {
-        console.error("Error fetching patients:", err)
-        setError("Failed to load patient data")
-        if (isLoggedIn) {
-          navigate("/home")
-        } else {
-          navigate("/login")
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchPatients()
   }, [user, authenticatedFetch, navigate, isLoggedIn])
+  console.log(user)
+  /**
+   * Fetch patients from backend
+   * GET /patients - Returns all patients for the logged-in doctor
+   * Only doctors with "doctor" role can access patient data
+   */
+  const fetchPatients = async () => {
+    try {
+      setLoading(true)
+      const response = await authenticatedFetch("http://localhost:5000/patients")
 
+      if (response.ok) {
+        const data = await response.json()
+        setPatients(data || [])
+      } else {
+        throw new Error("Failed to fetch patients")
+      }
+    } catch (err) {
+      console.error("Error fetching patients:", err)
+      setError("Failed to load patient data")
+      if (isLoggedIn) {
+        navigate("/home")
+      } else {
+        navigate("/login")
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Logout and redirect to landing page
+   */
   const handleLogout = () => {
     logout()
     navigate("/")
   }
 
+  /**
+   * Get color class for patient diagnosis status
+   * @param {string} status - Patient diagnosis/status
+   * @returns {string} - Tailwind CSS classes for styling
+   */
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "high risk":
@@ -71,7 +84,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-green-800">
-                {user?.role === "admin" ? "Admin Dashboard" : "User Dashboard"}
+                {user?.role === "admin" ? "Admin Dashboard" : "Doctor Dashboard"}
               </h1>
               <p className="text-sm text-green-600">
                 Welcome back, {user?.name || "User"}
@@ -109,7 +122,7 @@ export default function Home() {
         <div className="bg-white rounded-lg shadow-md border border-green-200 p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-green-800">
-              {user?.role === "admin" ? "All Patients" : "Assigned Patients"}
+              {user?.role === "admin" ? "All Patients" : "My Patients"}
             </h2>
             <span className="text-sm text-green-600">{patients.length} patients</span>
           </div>
@@ -132,9 +145,7 @@ export default function Home() {
               </svg>
               <h3 className="mt-2 text-sm font-medium text-green-900">No patients found</h3>
               <p className="mt-1 text-sm text-green-500">
-                {user?.role === "admin"
-                  ? "No patients in the system yet."
-                  : "No patients have been assigned to you yet."}
+                {user?.role === "admin" ? "No patients in the system yet." : "You haven't added any patients yet."}
               </p>
             </div>
           ) : (
@@ -149,10 +160,13 @@ export default function Home() {
                       Age
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                      Status
+                      Gender
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                      Last Visit
+                      Diagnosis
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
+                      Date Added
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
                       Actions
@@ -166,18 +180,25 @@ export default function Home() {
                         <div className="text-sm font-medium text-green-900">{patient.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-green-700">{patient.age}</div>
+                        <div className="text-sm text-green-700">
+                          {patient.ageYears}y {patient.ageMonths || 0}m
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-green-700 capitalize">{patient.gender}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusColor(
-                            patient.status,
+                            patient.diagnosis,
                           )}`}
                         >
-                          {patient.status}
+                          {patient.diagnosis || "N/A"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-700">{patient.lastVisit}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-700">
+                        {new Date(patient.createdAt).toLocaleDateString()}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button className="text-green-600 hover:text-green-900 mr-3">View</button>
                         <button className="text-blue-600 hover:text-blue-900">Edit</button>

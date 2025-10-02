@@ -31,19 +31,20 @@ export const AuthProvider = ({ children }) => {
         role: "admin",
       },
     },
-    user: {
-      email: "user@test.com",
-      password: "user123",
+    doctor: {
+      email: "doctor@test.com",
+      password: "doctor123",
       userData: {
         id: 2,
-        email: "user@test.com",
-        name: "Test User",
-        role: "user",
+        email: "doctor@test.com",
+        name: "Test Doctor",
+        role: "doctor",
         approved: true,
       },
     },
   }
 
+  // Initialize authentication state from localStorage on app load
   useEffect(() => {
     const storedToken = localStorage.getItem("authToken")
     const storedUser = localStorage.getItem("user")
@@ -76,7 +77,14 @@ export const AuthProvider = ({ children }) => {
     setLoading(false)
   }, [])
 
-  const login = async (email, password, role = "user") => {
+  /**
+   * Login function - Authenticates user with backend API
+   * @param {string} email - User's email address
+   * @param {string} password - User's password
+   * @param {string} role - User's role (admin or doctor)
+   * @returns {Object} - { success: boolean, isDummy: boolean, user: Object, error: string }
+   */
+  const login = async (email, password, role = "doctor") => {
     try {
       // Try real backend API first
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -96,7 +104,7 @@ export const AuthProvider = ({ children }) => {
           const tokenPayload = JSON.parse(atob(data.accessToken.split(".")[1]))
 
           // Determine role from token payload (backend includes roles array)
-          const userRole = tokenPayload.roles?.some((r) => r.role?.name === "admin") ? "admin" : "user"
+          const userRole = tokenPayload.roles?.some((r) => r.role?.name === "admin") ? "admin" : "doctor"
 
           const userData = {
             id: tokenPayload.userId,
@@ -139,6 +147,11 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  /**
+   * Register function - Creates new user account (requires admin approval)
+   * @param {Object} userData - { email, password, name }
+   * @returns {Object} - { success: boolean, message: string, isDummy: boolean, error: string }
+   */
   const register = async (userData) => {
     try {
       // Try real backend API first
@@ -182,6 +195,9 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  /**
+   * Logout function - Clears authentication state and local storage
+   */
   const logout = () => {
     setIsLoggedIn(false)
     setToken(null)
@@ -191,6 +207,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user")
   }
 
+  /**
+   * Get authentication headers for API requests
+   * @returns {Object} - Headers object with Authorization and Content-Type
+   */
   const getAuthHeaders = () => {
     if (token) {
       return {
@@ -203,6 +223,13 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  /**
+   * Authenticated fetch wrapper - Makes API calls with authentication headers
+   * Falls back to dummy data if using dummy credentials
+   * @param {string} url - API endpoint URL
+   * @param {Object} options - Fetch options (method, body, headers, etc.)
+   * @returns {Promise<Response>} - Fetch response
+   */
   const authenticatedFetch = async (url, options = {}) => {
     const headers = {
       ...getAuthHeaders(),
@@ -213,6 +240,7 @@ export const AuthProvider = ({ children }) => {
       if (token && token.startsWith("dummy_")) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
 
+        // Mock response for patient analysis
         if (url.includes("/api/patient/analyze")) {
           return {
             ok: true,
@@ -233,56 +261,67 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
-        if (url.includes("/api/patients") && user?.role === "admin") {
+        // Mock response for fetching all patients (admin or doctor)
+        if (url.includes("/patients") && !url.includes("/patients/")) {
           return {
             ok: true,
-            json: async () => ({
-              patients: [
-                { id: 1, name: "John Doe", age: 35, status: "High Risk", lastVisit: "2024-01-15" },
-                { id: 2, name: "Jane Smith", age: 28, status: "Low Risk", lastVisit: "2024-01-20" },
-                { id: 3, name: "Bob Johnson", age: 42, status: "Medium Risk", lastVisit: "2024-01-18" },
-              ],
-            }),
+            json: async () => [
+              {
+                id: "1",
+                name: "John Doe",
+                ageYears: 35,
+                ageMonths: 6,
+                gender: "male",
+                diagnosis: "High Risk",
+                createdAt: "2024-01-15",
+              },
+              {
+                id: "2",
+                name: "Jane Smith",
+                ageYears: 28,
+                ageMonths: 3,
+                gender: "female",
+                diagnosis: "Low Risk",
+                createdAt: "2024-01-20",
+              },
+            ],
           }
         }
 
-        if (url.includes("/api/patients/assigned") && user?.role === "user") {
+        // Mock response for pending user approvals (admin only)
+        if (url.includes("/admin/pending") && user?.role === "admin") {
           return {
             ok: true,
-            json: async () => ({
-              patients: [{ id: 1, name: "John Doe", age: 35, status: "High Risk", lastVisit: "2024-01-15" }],
-            }),
+            json: async () => [
+              {
+                id: "1",
+                name: "Alice Brown",
+                email: "alice@test.com",
+                createdAt: new Date("2024-01-22").toISOString(),
+              },
+              {
+                id: "2",
+                name: "Charlie Wilson",
+                email: "charlie@test.com",
+                createdAt: new Date("2024-01-21").toISOString(),
+              },
+            ],
           }
         }
 
-        if (url.includes("/api/requests") && user?.role === "admin") {
+        // Mock response for approving a user
+        if (url.includes("/admin/approve/") && options.method === "POST") {
           return {
             ok: true,
-            json: async () => ({
-              requests: [
-                {
-                  id: 1,
-                  name: "Alice Brown",
-                  email: "alice@test.com",
-                  requestDate: "2024-01-22",
-                  status: "pending",
-                },
-                {
-                  id: 2,
-                  name: "Charlie Wilson",
-                  email: "charlie@test.com",
-                  requestDate: "2024-01-21",
-                  status: "pending",
-                },
-              ],
-            }),
+            json: async () => ({ message: "User approved", user: { id: "1", email: "test@test.com" } }),
           }
         }
 
-        if (url.includes("/api/requests/") && options.method === "PUT") {
+        // Mock response for assigning role to user
+        if (url.includes("/admin/assign-role") && options.method === "POST") {
           return {
             ok: true,
-            json: async () => ({ success: true, message: "Request processed successfully" }),
+            json: async () => ({ message: "Role assigned successfully" }),
           }
         }
 
@@ -292,11 +331,13 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
+      // Make real API call to backend
       const response = await fetch(url, {
         ...options,
         headers,
       })
 
+      // Handle unauthorized access (expired token)
       if (response.status === 401) {
         logout()
         window.location.href = "/login"

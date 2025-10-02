@@ -12,6 +12,7 @@ export default function Requests() {
   const [error, setError] = useState("")
   const [processingId, setProcessingId] = useState(null)
 
+  // Check authentication and authorization on component mount
   useEffect(() => {
     if (!isLoggedIn) {
       navigate("/login")
@@ -26,14 +27,25 @@ export default function Requests() {
     fetchRequests()
   }, [user, isLoggedIn, navigate])
 
+  /**
+   * Fetch pending user registration requests from backend
+   * GET /admin/pending - Returns list of users awaiting approval
+   */
   const fetchRequests = async () => {
     try {
       setLoading(true)
-      const response = await authenticatedFetch("/api/requests")
+      const response = await authenticatedFetch("http://localhost:5000/admin/pending")
 
       if (response.ok) {
         const data = await response.json()
-        setRequests(data.requests || [])
+        const formattedRequests = data.map((req) => ({
+          id: req.id,
+          name: req.name,
+          email: req.email,
+          requestDate: new Date(req.createdAt).toLocaleDateString(),
+          status: "pending",
+        }))
+        setRequests(formattedRequests)
       } else {
         throw new Error("Failed to fetch requests")
       }
@@ -50,18 +62,49 @@ export default function Requests() {
     }
   }
 
+  /**
+   * Handle approve/reject actions for user registration requests
+   * @param {string} requestId - User ID to approve or reject
+   * @param {string} action - "approve" or "reject"
+   *
+   * Approve flow:
+   * 1. POST /admin/approve/:userId - Activates the user account
+   * 2. POST /admin/assign-role - Assigns "doctor" role to the user
+   */
   const handleRequest = async (requestId, action) => {
     try {
       setProcessingId(requestId)
-      const response = await authenticatedFetch(`/api/requests/${requestId}`, {
-        method: "PUT",
-        body: JSON.stringify({ action }),
-      })
 
-      if (response.ok) {
+      if (action === "approve") {
+        // Step 1: Approve the user (set isActive to true)
+        const approveResponse = await authenticatedFetch(`http://localhost:5000/admin/approve/${requestId}`, {
+          method: "POST",
+        })
+
+        if (!approveResponse.ok) {
+          const errorData = await approveResponse.json()
+          throw new Error(errorData.error || "Failed to approve request")
+        }
+
+        // Step 2: Assign "doctor" role to the approved user
+        const assignRoleResponse = await authenticatedFetch("http://localhost:5000/admin/assign-role", {
+          method: "POST",
+          body: JSON.stringify({
+            userId: requestId,
+            roleName: "doctor",
+          }),
+        })
+
+        if (!assignRoleResponse.ok) {
+          const errorData = await assignRoleResponse.json()
+          throw new Error(errorData.error || "Failed to assign doctor role")
+        }
+
+        // Remove approved request from list
         setRequests(requests.filter((req) => req.id !== requestId))
       } else {
-        throw new Error(`Failed to ${action} request`)
+        // For now, just remove from list (backend doesn't have reject endpoint yet)
+        setRequests(requests.filter((req) => req.id !== requestId))
       }
     } catch (err) {
       console.error(`Error ${action}ing request:`, err)
@@ -71,6 +114,9 @@ export default function Requests() {
     }
   }
 
+  /**
+   * Logout and redirect to landing page
+   */
   const handleLogout = () => {
     logout()
     navigate("/")
