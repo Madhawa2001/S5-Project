@@ -1,10 +1,14 @@
 "use client"
 import { useState } from "react"
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext"
 
 export default function PatientData() {
   const [activeTab, setActiveTab] = useState("demographics")
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const { isLoggedIn, authenticatedFetch } = useAuth()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState("")
 
   // Demographics state
   const [age, setAge] = useState("")
@@ -22,25 +26,75 @@ export default function PatientData() {
   const [cotinine, setCotinine] = useState("")
   const [bmi, setBmi] = useState("")
 
-  const handleGenerateAssessment = () => {
-    // TODO: Implement risk assessment generation
-    console.log("Generating risk assessment...")
+  const handleGenerateAssessment = async () => {
+    // Collect all form data
+    const patientData = {
+      age,
+      sex,
+      raceEthnicity,
+      educationLevel,
+      cadmium,
+      lead,
+      mercury,
+      selenium,
+      cotinine,
+      bmi,
+    }
+
+    // Basic validation for required fields
+    if (!age || !sex || !cadmium || !lead || !mercury || !selenium) {
+      alert("Please fill in all required fields (marked with *)")
+      return
+    }
+
+    setIsSubmitting(true)
+    setSubmitError("")
+
+    try {
+      const response = await authenticatedFetch("/api/generate-report", {
+        method: "POST",
+        body: JSON.stringify(patientData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`)
+      }
+
+      const reportData = await response.json()
+
+      // Navigate to report page with both patient data and report data
+      navigate("/report", {
+        state: {
+          patientData,
+          reportData,
+        },
+      })
+    } catch (error) {
+      console.error("Error generating report:", error)
+      setSubmitError(error.message || "Failed to generate report. Please try again.")
+
+      if (!isLoggedIn) {
+        navigate("/")
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 p-4">
       <div className="max-w-6xl mx-auto space-y-6">
-            <div className="flex items-center gap-4">
-                <button
-                  className="border border-green-300 text-green-700 hover:bg-green-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors flex items-center"
-                  onClick={() => navigate("/")}
-                >
-                  <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to Dashboard
-                </button>
-            </div>
+        <div className="flex items-center gap-4">
+          <button
+            className="border border-green-300 text-green-700 hover:bg-green-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors flex items-center"
+            onClick={() => navigate(isLoggedIn ? "/home" : "/")}
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            {isLoggedIn ? "Back to Home" : "Back to Login"}
+          </button>
+        </div>
 
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-green-800">Patient Data Entry</h1>
@@ -66,6 +120,12 @@ export default function PatientData() {
           </div>
           <div className="p-6">
             <div className="space-y-6">
+              {submitError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                  {submitError}
+                </div>
+              )}
+
               <div className="grid w-full grid-cols-3 bg-green-50 border border-green-200 rounded-lg p-1">
                 <button
                   onClick={() => setActiveTab("demographics")}
@@ -352,17 +412,46 @@ export default function PatientData() {
             <div className="flex justify-end pt-6 border-t border-green-100">
               <button
                 onClick={handleGenerateAssessment}
-                className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-8 rounded-md transition-colors flex items-center"
+                disabled={isSubmitting}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-2 px-8 rounded-md transition-colors flex items-center"
               >
-                <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Generate Risk Assessment
+                {isSubmitting ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Generating Report...
+                  </>
+                ) : (
+                  <>
+                    <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Generate Risk Assessment
+                  </>
+                )}
               </button>
             </div>
           </div>
