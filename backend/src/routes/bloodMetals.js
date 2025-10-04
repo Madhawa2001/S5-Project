@@ -7,7 +7,7 @@ import { audit } from "../middleware/audit.js";
 const router = express.Router();
 const prisma = new PrismaClient();
 
-router.use(verifyToken, requireRole("doctor"));
+router.use(verifyToken, requireRole("doctor", "nurse"));
 
 // Add a new blood metals report for a patient
 router.post("/:patientId", audit("CREATE_BLOODMETALS"), async (req, res) => {

@@ -44,8 +44,8 @@ model Patient {
   pregnancyCount  Int?
   pregnancyStatus Boolean?
   diagnosis       String?
-  doctorId        String
-  doctor          User          @relation(fields: [doctorId], references: [id])
+  doctorId        String?
+  doctor          User?          @relation(fields: [doctorId], references: [id])
   bloodMetals     BloodMetals[]
   predictions     Prediction[]
   createdAt       DateTime      @default(now())

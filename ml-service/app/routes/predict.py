@@ -55,7 +55,7 @@ def feature_sensitivity(model, X_row: pd.Series, feature: str, num_points: int =
 
 @router.post("/{model}")
 async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
-    if "doctor" not in user.get("roles", []):
+    if "doctor" not in user.get("roles", []) and "nurse" not in user.get("roles", []):
         raise HTTPException(status_code=403, detail="Forbidden")
 
     if model not in MODELS:
@@ -101,7 +101,7 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
 
 @router.post("/sensitivity/{model}")
 async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_jwt)):
-    if "doctor" not in user.get("roles", []):
+    if "doctor" not in user.get("roles", []) and "nurse" not in user.get("roles", []):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     if model not in MODELS:
