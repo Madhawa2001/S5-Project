@@ -60,4 +60,49 @@ router.post(
   }
 );
 
+router.post(
+  "/:model/sensitivity/:method",
+  verifyToken,
+  requireRole("doctor"),
+  audit("SENSITIVITY"),
+  async (req, res) => {
+    try {
+      const { model, method } = req.params;
+      let payload = req.body;
+
+      if (method === "db") {
+        const { patientId } = req.body;
+        if (!patientId) {
+          return res.status(400).json({ error: "patientId required" });
+        }
+
+        const patient = await prisma.patient.findUnique({
+          where: { id: patientId },
+          include: { bloodMetals: { orderBy: { createdAt: "desc" } } },
+        });
+
+        if (!patient) {
+          return res.status(404).json({ error: "Patient not found" });
+        }
+
+        payload = { features: patient };
+      }
+
+      const response = await axios.post(
+        `${process.env.ML_SERVICE_URL}/predict/sensitivity/${model}`,
+        payload,
+        { headers: { Authorization: req.headers.authorization } }
+      );
+
+      res.json(response.data);
+    } catch (err) {
+      console.error("Sensitivity service error:", err.message);
+      res.status(500).json({
+        error: "Sensitivity service error",
+        details: err.response?.data || err.message,
+      });
+    }
+  }
+);
+
 export default router;
