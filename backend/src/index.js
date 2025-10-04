@@ -14,7 +14,7 @@ import { globalLimiter } from "./middleware/rateLimit.js";
 import mlRoutes from "./routes/ml.js";
 
 const app = express();
-// dotenv.config();
+//dotenv.config();
 
 app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
@@ -49,7 +49,7 @@ app.use("/patients", patientRoutes);
 app.use("/bloodmetals", bloodMetalsRoutes);
 app.use("/ml", mlRoutes);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
