@@ -7,7 +7,12 @@ const prisma = new PrismaClient();
 async function main() {
   // Seed roles
   await prisma.role.createMany({
-    data: [{ name: "doctor" }, { name: "admin" }, { name: "unauthorized" }],
+    data: [
+      { name: "doctor" },
+      { name: "admin" },
+      { name: "nurse" },
+      { name: "unauthorized" },
+    ],
     skipDuplicates: true,
   });
 
