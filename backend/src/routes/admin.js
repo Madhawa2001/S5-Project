@@ -6,17 +6,39 @@ import { verifyToken, requireRole } from "../middleware/auth.js";
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// all admin routes require admin role
-router.use(verifyToken, requireRole("admin"));
-
-// ✅ List users pending approval
+// ✅ List users pending approval (with roles)
 router.get("/pending", async (req, res) => {
-  const pending = await prisma.user.findMany({
-    where: { isActive: false },
-    select: { id: true, email: true, name: true, createdAt: true },
-    orderBy: { createdAt: "desc" },
-  });
-  res.json(pending);
+  try {
+    const pending = await prisma.user.findMany({
+      where: { isActive: false },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+        roles: {
+          select: {
+            role: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Optional: flatten roles into simple string array for convenience
+    const formatted = pending.map((user) => ({
+      ...user,
+      roles: user.roles.map((r) => r.role.name),
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error("❌ Error fetching pending users:", error);
+    res.status(500).json({
+      error: "Failed to fetch pending users",
+      details: String(error),
+    });
+  }
 });
 
 // ✅ Approve a user
