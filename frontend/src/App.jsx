@@ -5,6 +5,9 @@ import Login from "./pages/Login"
 import Register from "./pages/Register"
 import Home from "./pages/Home"
 import PatientData from "./pages/Patient-data"
+import BloodMetalData from "./pages/Blood-metal-data"
+import PatientDetails from "./pages/Patient-details"
+import EditPatient from "./pages/Edit-patient"
 import Report from "./pages/Report"
 import Requests from "./pages/Requests"
 import { useAuth } from "./contexts/AuthContext"
@@ -29,6 +32,9 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/home" element={<Home />} />
         <Route path="/patient-data" element={<PatientData />} />
+        <Route path="/blood-metals" element={<BloodMetalData />} />
+        <Route path="/patient/:id" element={<PatientDetails />} />
+        <Route path="/edit-patient" element={<EditPatient />} />
         <Route path="/report" element={<Report />} />
         <Route path="/requests" element={<Requests />} />
 

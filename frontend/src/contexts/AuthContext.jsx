@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
    * @param {string} role - User's role (admin or doctor)
    * @returns {Object} - { success: boolean, isDummy: boolean, user: Object, error: string }
    */
-  const login = async (email, password, role = "doctor") => {
+  const login = async (email, password, role) => {
     try {
       // Try real backend API first
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -100,11 +100,11 @@ export const AuthProvider = ({ children }) => {
 
         // Backend returns { accessToken, refreshToken, user }
         if (data.accessToken) {
-          // Extract user info from JWT token
+          // Decode token
           const tokenPayload = JSON.parse(atob(data.accessToken.split(".")[1]))
 
-          // Determine role from token payload (backend includes roles array)
-          const userRole = tokenPayload.roles?.some((r) => r.role?.name === "admin") ? "admin" : "doctor"
+          const rolesArray = tokenPayload.roles || []
+          const userRole = rolesArray.includes("admin") ? "admin" : "doctor"
 
           const userData = {
             id: tokenPayload.userId,
