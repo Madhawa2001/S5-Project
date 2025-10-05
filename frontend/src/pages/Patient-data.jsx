@@ -11,9 +11,11 @@ export default function PatientData() {
   const [submitError, setSubmitError] = useState("")
 
   const [name, setName] = useState("")
-  const [dob, setDob] = useState("")
-  const [ageYears, setAgeYears] = useState("")
-  const [ageMonths, setAgeMonths] = useState("")
+  const [dob, setDob] = useState("");
+  // const [ageYears, setAgeYears] = useState("")
+  // const [ageMonths, setAgeMonths] = useState("")
+  const [heightCm, setHeightCm] = useState("")
+  const [weightKg, setWeightKg] = useState("")
   const [gender, setGender] = useState("")
   const [pregnancyCount, setPregnancyCount] = useState("")
   const [pregnancyStatus, setPregnancyStatus] = useState(false)
@@ -22,33 +24,34 @@ export default function PatientData() {
   // Doctor selection for nurse
   const [doctors, setDoctors] = useState([])
   const [selectedDoctorId, setSelectedDoctorId] = useState("")
+  console.log("Date of Birth:", dob)
 
   // Calculate age from DOB
-  const handleDobChange = (value) => {
-    setDob(value)
-    if (value) {
-      const birthDate = new Date(value)
-      const today = new Date()
-      let years = today.getFullYear() - birthDate.getFullYear()
-      let months = today.getMonth() - birthDate.getMonth()
-      if (months < 0) {
-        years -= 1
-        months += 12
-      }
-      setAgeYears(years)
-      setAgeMonths(months)
-    } else {
-      setAgeYears("")
-      setAgeMonths("")
-    }
-  }
+  // const handleDobChange = (value) => {
+  //   setDob(value)
+  //   if (value) {
+  //     const birthDate = new Date(value)
+  //     const today = new Date()
+  //     let years = today.getFullYear() - birthDate.getFullYear()
+  //     let months = today.getMonth() - birthDate.getMonth()
+  //     if (months < 0) {
+  //       years -= 1
+  //       months += 12
+  //     }
+  //     setAgeYears(years)
+  //     setAgeMonths(months)
+  //   } else {
+  //     setAgeYears("")
+  //     setAgeMonths("")
+  //   }
+  // }
 
   // Fetch doctors list if user is a nurse
   useEffect(() => {
     const fetchDoctors = async () => {
       if (user?.role === "nurse") {
         try {
-          const res = await authenticatedFetch("http://localhost:5000/doctors")
+          const res = await authenticatedFetch("http://localhost:5000/patients/available-doctors")
           if (!res.ok) throw new Error("Failed to fetch doctors")
           const data = await res.json()
           setDoctors(data)
@@ -61,6 +64,7 @@ export default function PatientData() {
   }, [authenticatedFetch, user])
 
   const handleCreatePatient = async (redirectToBloodMetals = false) => {
+    console.log("fields", { name, dob, heightCm, weightKg, gender, pregnancyCount, pregnancyStatus, diagnosis });
     if (!name || !dob || !gender) {
       alert("Please fill in all required fields (Name, DOB, Gender)")
       return
@@ -77,9 +81,12 @@ export default function PatientData() {
     try {
       const patientData = {
         name,
-        ageYears: Number.parseInt(ageYears),
-        ageMonths: Number.parseInt(ageMonths),
+        // ageYears: Number.parseInt(ageYears),
+        // ageMonths: Number.parseInt(ageMonths),
+        dob: dob ? new Date(dob) : null,
         gender,
+        heightCm: heightCm ? Number.parseFloat(heightCm) : null,
+        weightKg: weightKg ? Number.parseFloat(weightKg) : null,
         pregnancyCount: gender === "female" && pregnancyCount ? Number.parseInt(pregnancyCount) : null,
         pregnancyStatus: gender === "female" ? pregnancyStatus : false,
         diagnosis: diagnosis || null,
@@ -173,13 +180,13 @@ export default function PatientData() {
                 </label>
                 <input
                   type="date"
-                  value={dob}
-                  onChange={(e) => handleDobChange(e.target.value)}
+                  value={dob} // must be YYYY-MM-DD string
+                  onChange={(e) => setDob(e.target.value)}
                   className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
                 />
               </div>
 
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-green-700">Age (Years)</label>
                 <input
                   type="number"
@@ -196,6 +203,28 @@ export default function PatientData() {
                   value={ageMonths}
                   readOnly
                   className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black bg-gray-100"
+                />
+              </div> */}
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Height (cm)</label>
+                <input
+                  type="number"
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                  placeholder="Enter height in cm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Weight (kg)</label>
+                <input
+                  type="number"
+                  value={weightKg}
+                  onChange={(e) => setWeightKg(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                  placeholder="Enter weight in kg"
                 />
               </div>
 
@@ -222,9 +251,8 @@ export default function PatientData() {
                   value={pregnancyCount}
                   onChange={(e) => setPregnancyCount(e.target.value)}
                   disabled={gender === "male"}
-                  className={`w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black ${
-                    gender === "male" ? "bg-gray-100" : ""
-                  }`}
+                  className={`w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black ${gender === "male" ? "bg-gray-100" : ""
+                    }`}
                   placeholder="Number of pregnancies"
                 />
               </div>

@@ -103,13 +103,12 @@ export const AuthProvider = ({ children }) => {
           // Decode token
           const tokenPayload = JSON.parse(atob(data.accessToken.split(".")[1]))
 
-          const rolesArray = tokenPayload.roles || []
-          let userRole = "doctor"
-          if (rolesArray.includes("admin")) {
-            userRole = "admin"
-          } else if (rolesArray.includes("nurse")) {
-            userRole = "nurse"
-          }
+          // Extract the first role from backend roles array
+          const rolesArray = Array.isArray(tokenPayload.roles) ? tokenPayload.roles : []
+          const userRole = rolesArray.length > 0 ? rolesArray[0] : "doctor"
+
+          console.log("Decoded JWT payload:", tokenPayload)
+          console.log("Extracted user role:", userRole)
 
           const userData = {
             id: tokenPayload.userId,
@@ -125,6 +124,7 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem("refreshToken", data.refreshToken)
           localStorage.setItem("user", JSON.stringify(userData))
 
+          console.log("User data stored in localStorage:", userData)
           return { success: true, isDummy: false, user: userData }
         }
       } else {

@@ -44,6 +44,12 @@ export default function Register() {
       setLoading(false)
       return
     }
+
+    if (!formData.name || !formData.email || !formData.password || !formData.role) {
+      setError("Please fill in all required fields")
+      setLoading(false)
+      return
+    }
     console.log(formData)
 
     try {
@@ -56,6 +62,7 @@ export default function Register() {
         // licenseNumber: formData.licenseNumber,
         role: formData.role,
       })
+      console.log(result)
 
       if (result.success) {
         setSuccess(true)
