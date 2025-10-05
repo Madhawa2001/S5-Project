@@ -71,13 +71,14 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
             y_pred = clf.predict(X)
             value = float(y_pred[0])
 
-            await db.prediction.create(
-                data={
-                    "patientId": input.features["id"],
-                    "model": key,
-                    "value": value
-                }
-            )
+            if input.features["id"] != "None":
+                await db.prediction.create(
+                    data={
+                        "patientId": input.features["id"],
+                        "model": key,
+                        "value": value
+                    }
+                )
             results[key] = value
             
         return {"model": model, "predictions": results}
@@ -85,16 +86,18 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
     # --- Normal single-model case ---
     clf = MODELS[model]
     X = build_feature_df(input.features, model)
+    print(X)
     y_pred = clf.predict(X)
     value = float(y_pred[0])
 
-    await db.prediction.create(
-        data={
-            "patientId": input.features["id"],
-            "model": model,
-            "value": value
-        }
-    )
+    if input.features["id"] != "None":
+        await db.prediction.create(
+            data={
+                "patientId": input.features["id"],
+                "model": model,
+                "value": value
+            }
+        )
 
     return {"model": model, "prediction": value}
 

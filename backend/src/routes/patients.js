@@ -18,9 +18,10 @@ router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
   try {
     const {
       name,
-      ageYears,
-      ageMonths,
+      dob,
       gender,
+      heightCm,
+      weightKg,
       pregnancyCount,
       pregnancyStatus,
       diagnosis,
@@ -29,38 +30,58 @@ router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
 
     const userRoles = req.dbUser.roles.map((r) => r.role.name);
 
-    // if doctor, auto-assign themselves
+    // If logged-in user is a doctor, auto-assign them
     let assignedDoctorId = doctorId;
     if (userRoles.includes("doctor")) {
       assignedDoctorId = req.user.userId;
     }
 
-    // ✅ CORRECTED PART STARTS HERE
-    const patientData = {
-      name,
-      ageYears,
-      ageMonths,
-      gender,
-      pregnancyCount,
-      pregnancyStatus,
-      diagnosis,
-    };
+    // Parse and calculate
+    const parsedDob = new Date(dob);
+    const now = new Date();
 
-    // If there's a doctor to assign, add the 'connect' object
-    if (assignedDoctorId) {
-      patientData.doctor = {
-        connect: {
-          id: assignedDoctorId,
-        },
-      };
+    let ageYears = null;
+    let ageMonths = null;
+    if (!isNaN(parsedDob)) {
+      const diffMs = now - parsedDob;
+      const diffDate = new Date(diffMs);
+      ageYears = diffDate.getUTCFullYear() - 1970;
+      ageMonths = now.getMonth() - parsedDob.getMonth();
+      if (ageMonths < 0) {
+        ageMonths += 12;
+      }
     }
 
-    const patient = await prisma.patient.create({
-      data: patientData,
-    });
+    const parsedHeight = heightCm ? parseFloat(heightCm) : null;
+    const parsedWeight = weightKg ? parseFloat(weightKg) : null;
+    const bmi =
+      parsedHeight && parsedWeight
+        ? parsedWeight / (parsedHeight / 100) ** 2
+        : null;
+
+    // Prepare Prisma data
+    const patientData = {
+      name,
+      dob: parsedDob,
+      gender,
+      heightCm: parsedHeight,
+      weightKg: parsedWeight,
+      bmi,
+      ageYears,
+      ageMonths,
+      pregnancyCount: pregnancyCount ? parseInt(pregnancyCount) : null,
+      pregnancyStatus: pregnancyStatus ?? null,
+      diagnosis,
+      doctor: assignedDoctorId
+        ? { connect: { id: assignedDoctorId } }
+        : undefined,
+    };
+
+    const patient = await prisma.patient.create({ data: patientData });
 
     res.json(patient);
   } catch (error) {
+    console.error("❌ Error creating patient:", error);
     res.status(500).json({
       error: "Failed to add patient",
       details: String(error),
@@ -70,8 +91,6 @@ router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
 
 /**
  * ✅ List all patients
- * - Doctors see their own patients
- * - Nurses see all patients (or optionally: unassigned + assigned)
  */
 router.get("/", audit("LIST_PATIENTS"), async (req, res) => {
   try {
@@ -81,7 +100,6 @@ router.get("/", audit("LIST_PATIENTS"), async (req, res) => {
     if (userRoles.includes("doctor")) {
       whereClause = { doctorId: req.user.userId };
     } else if (userRoles.includes("nurse")) {
-      // nurse can view all
       whereClause = {};
     }
 
@@ -91,6 +109,7 @@ router.get("/", audit("LIST_PATIENTS"), async (req, res) => {
         bloodMetals: true,
         doctor: { select: { name: true, id: true } },
       },
+      orderBy: { createdAt: "desc" },
     });
 
     res.json(patients);
@@ -104,7 +123,6 @@ router.get("/", audit("LIST_PATIENTS"), async (req, res) => {
 
 /**
  * ✅ Get available doctors
- * (for nurse to assign one to a patient)
  */
 router.get(
   "/available-doctors",
@@ -131,7 +149,6 @@ router.get(
 
 /**
  * ✅ Assign doctor to a patient
- * (nurse only)
  */
 router.patch(
   "/:patientId/assign-doctor",
@@ -166,8 +183,7 @@ router.patch(
 );
 
 /**
- * ✅ Get a single patient (doctor can only see their own)
- * Nurses can see any
+ * ✅ Get a single patient
  */
 router.get("/:patientId", audit("READ_PATIENT"), async (req, res) => {
   try {
@@ -194,8 +210,6 @@ router.get("/:patientId", audit("READ_PATIENT"), async (req, res) => {
 
 /**
  * ✅ Update patient record
- * Nurses can update any
- * Doctors can update only their patients
  */
 router.put("/:patientId", audit("UPDATE_PATIENT"), async (req, res) => {
   try {
@@ -211,15 +225,50 @@ router.put("/:patientId", audit("UPDATE_PATIENT"), async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    const data = { ...req.body };
+    if (data.dob) data.dob = new Date(data.dob); // ensure date object
+
     const updated = await prisma.patient.update({
       where: { id: patientId },
-      data: req.body,
+      data,
     });
 
     res.json(updated);
   } catch (error) {
     res.status(500).json({
       error: "Failed to update patient",
+      details: String(error),
+    });
+  }
+});
+
+/**
+ * ✅ Delete patient
+ * - Doctor can delete only their own
+ * - Nurse can delete any
+ */
+router.delete("/:patientId", audit("DELETE_PATIENT"), async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const userRoles = req.dbUser.roles.map((r) => r.role.name);
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+    });
+    if (!patient) return res.status(404).json({ error: "Patient not found" });
+
+    if (userRoles.includes("doctor") && patient.doctorId !== req.user.userId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    await prisma.bloodMetals.deleteMany({ where: { patientId } });
+    await prisma.prediction.deleteMany({ where: { patientId } });
+    await prisma.patient.delete({ where: { id: patientId } });
+
+    res.json({ message: "Patient deleted successfully" });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to delete patient",
       details: String(error),
     });
   }
