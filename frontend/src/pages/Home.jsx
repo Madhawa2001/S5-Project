@@ -100,12 +100,14 @@ export default function Home() {
                   Requests
                 </button>
               )}
+              {user?.role === "doctor" && (
               <button
                 onClick={() => navigate("/patient-data")}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
               >
                 New Patient
               </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium"
@@ -200,8 +202,18 @@ export default function Home() {
                         {new Date(patient.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-green-600 hover:text-green-900 mr-3">View</button>
-                        <button className="text-blue-600 hover:text-blue-900">Edit</button>
+                        <button
+                          className="text-green-600 hover:text-green-900 mr-3"
+                          onClick={() => navigate(`/patient/${patient.id}`)}
+                        >
+                          View
+                        </button>
+                        <button
+                          className="text-blue-600 hover:text-blue-900"
+                          onClick={() => navigate("/edit-patient", { state: { patient } })}
+                        >
+                          Edit
+                        </button>
                       </td>
                     </tr>
                   ))}
