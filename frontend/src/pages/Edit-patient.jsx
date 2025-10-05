@@ -21,8 +21,10 @@ export default function EditPatient() {
     // Basic Details
     const [name, setName] = useState("")
     const [dob, setDob] = useState("")
-    const [ageYears, setAgeYears] = useState("")
-    const [ageMonths, setAgeMonths] = useState("")
+    // const [ageYears, setAgeYears] = useState("")
+    // const [ageMonths, setAgeMonths] = useState("")
+    const [heightCm, setHeightCm] = useState("")
+    const [weightKg, setWeightKg] = useState("")
     const [gender, setGender] = useState("")
     const [pregnancyStatus, setPregnancyStatus] = useState(false)
     const [pregnancyCount, setPregnancyCount] = useState("")
@@ -40,24 +42,24 @@ export default function EditPatient() {
     const [manganese, setManganese] = useState("")
 
     // Calculate age from DOB
-    const calculateAge = (value) => {
-        setDob(value)
-        if (value) {
-            const birthDate = new Date(value)
-            const today = new Date()
-            let years = today.getFullYear() - birthDate.getFullYear()
-            let months = today.getMonth() - birthDate.getMonth()
-            if (months < 0) {
-                years -= 1
-                months += 12
-            }
-            setAgeYears(years)
-            setAgeMonths(months)
-        } else {
-            setAgeYears("")
-            setAgeMonths("")
-        }
-    }
+    // const calculateAge = (value) => {
+    //     setDob(value)
+    //     if (value) {
+    //         const birthDate = new Date(value)
+    //         const today = new Date()
+    //         let years = today.getFullYear() - birthDate.getFullYear()
+    //         let months = today.getMonth() - birthDate.getMonth()
+    //         if (months < 0) {
+    //             years -= 1
+    //             months += 12
+    //         }
+    //         setAgeYears(years)
+    //         setAgeMonths(months)
+    //     } else {
+    //         setAgeYears("")
+    //         setAgeMonths("")
+    //     }
+    // }
 
     // Fetch patient details
     useEffect(() => {
@@ -74,9 +76,11 @@ export default function EditPatient() {
                     const today = new Date()
                     const approxDOB = new Date(today.getFullYear() - data.ageYears, today.getMonth() - data.ageMonths, today.getDate())
                     setDob(approxDOB.toISOString().split("T")[0])
-                    calculateAge(approxDOB.toISOString().split("T")[0])
+                    // calculateAge(approxDOB.toISOString().split("T")[0])
                 }
                 setGender(data.gender || "")
+                setHeightCm(data.heightCm ?? "")
+                setWeightKg(data.weightKg ?? "")
                 setPregnancyStatus(data.pregnancyStatus || false)
                 setPregnancyCount(data.pregnancyCount || "")
                 setDiagnosis(data.diagnosis || "")
@@ -108,7 +112,7 @@ export default function EditPatient() {
         const fetchDoctors = async () => {
             if (user.role === "nurse") {
                 try {
-                    const res = await authenticatedFetch("http://localhost:5000/doctors")
+                    const res = await authenticatedFetch("http://localhost:5000/patients/available-doctors")
                     if (!res.ok) throw new Error("Failed to fetch doctors")
                     const data = await res.json()
                     setDoctors(data)
@@ -133,9 +137,12 @@ export default function EditPatient() {
         try {
             const basicData = {
                 name,
-                ageYears: Number.parseInt(ageYears),
-                ageMonths: Number.parseInt(ageMonths),
+                // ageYears: Number.parseInt(ageYears),
+                // ageMonths: Number.parseInt(ageMonths),
+                dob,
                 gender,
+                heightCm: heightCm ? Number.parseFloat(heightCm) : null,
+                weightKg: weightKg ? Number.parseFloat(weightKg) : null,
                 pregnancyStatus: gender === "female" ? pregnancyStatus : false,
                 pregnancyCount: gender === "female" ? (pregnancyCount ? Number.parseInt(pregnancyCount) : 0) : null,
                 diagnosis,
@@ -215,10 +222,10 @@ export default function EditPatient() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-green-700">Date of Birth</label>
-                                    <input type="date" value={dob} onChange={e => calculateAge(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
+                                    <input type="date" value={dob} onChange={e => setDob(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
                                 </div>
 
-                                <div>
+                                {/* <div>
                                     <label className="block text-sm font-medium text-green-700">Age (Years)</label>
                                     <input type="number" value={ageYears} readOnly className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black bg-gray-100" />
                                 </div>
@@ -226,6 +233,16 @@ export default function EditPatient() {
                                 <div>
                                     <label className="block text-sm font-medium text-green-700">Age (Months)</label>
                                     <input type="number" value={ageMonths} readOnly className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black bg-gray-100" />
+                                </div> */}
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Height (cm)</label>
+                                    <input type="number" step="0.1" value={heightCm} onChange={e => setHeightCm(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Weight (kg)</label>
+                                    <input type="number" step="0.1" value={weightKg} onChange={e => setWeightKg(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
                                 </div>
 
                                 <div>

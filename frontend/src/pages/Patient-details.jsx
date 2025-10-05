@@ -94,6 +94,9 @@ return (
                 <div className="grid grid-cols-2 gap-4">
                     <p><strong>Age:</strong> {patient.ageYears}y {patient.ageMonths || 0}m</p>
                     <p><strong>Gender:</strong> {patient.gender}</p>
+                    <p><strong>Height:</strong> {patient.heightCm ? `${patient.heightCm} cm` : "N/A"}</p>
+                    <p><strong>Weight:</strong> {patient.weightKg ? `${patient.weightKg} kg` : "N/A"}</p>
+                    <p><strong>BMI:</strong> {patient.bmi ? patient.bmi.toFixed(2) : "N/A"}</p>
                     <p><strong>Pregnancy:</strong> {patient.pregnancyStatus ? "Yes" : "No"}</p>
                     <p><strong>Diagnosis:</strong> {patient.diagnosis || "N/A"}</p>
                 </div>

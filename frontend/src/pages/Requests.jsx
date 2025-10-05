@@ -43,10 +43,11 @@ export default function Requests() {
           id: req.id,
           name: req.name,
           email: req.email,
-          role: req.role,
+          role: req.roles && req.roles.length > 0 ? req.roles[0] : "",
           requestDate: new Date(req.createdAt).toLocaleDateString(),
           status: "pending",
         }))
+        console.log(formattedRequests)
         setRequests(formattedRequests)
       } else {
         throw new Error("Failed to fetch requests")
