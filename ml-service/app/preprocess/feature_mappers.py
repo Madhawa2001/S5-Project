@@ -25,7 +25,7 @@ def map_common_features(input: Dict) -> Dict:
     age_months = input.get("ageYears", 0) * 12 + input.get("ageMonths", 0)
 
     gender = input.get("gender")
-    gender_code = 1 if gender == "male" else 2 if gender == "female" else None
+    gender_code = 1 if gender.lower() == "male" else 2 if gender.lower() == "female" else None
 
     blood = input.get("bloodMetals", [{}])[0]  # take first record if exists
 

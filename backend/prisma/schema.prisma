@@ -38,9 +38,13 @@ model UserRole {
 model Patient {
   id              String        @id @default(cuid())
   name            String
-  ageYears        Int
+  dob             DateTime
+  ageYears        Int?
   ageMonths       Int?
   gender          String
+  heightCm        Float?        
+  weightKg        Float?        
+  bmi             Float?        
   pregnancyCount  Int?
   pregnancyStatus Boolean?
   diagnosis       String?
@@ -51,7 +55,6 @@ model Patient {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
-
 model BloodMetals {
   id              String   @id @default(cuid())
   patientId       String
@@ -88,3 +91,4 @@ model AccessLog {
   userAgent   String?
   createdAt   DateTime @default(now())
 }
+

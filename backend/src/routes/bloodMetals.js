@@ -109,4 +109,35 @@ router.get("/:patientId", audit("LIST_BLOODMETALS"), async (req, res) => {
   }
 });
 
+/**
+ * ✅ Delete a blood metals record
+ */
+router.delete("/:id", audit("DELETE_BLOODMETALS"), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const record = await prisma.bloodMetals.findUnique({
+      where: { id },
+      include: { patient: true },
+    });
+    if (!record) return res.status(404).json({ error: "Record not found" });
+
+    const userRoles = req.dbUser.roles.map((r) => r.role.name);
+    if (
+      userRoles.includes("doctor") &&
+      record.patient.doctorId !== req.user.userId
+    ) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    await prisma.bloodMetals.delete({ where: { id } });
+
+    res.json({ message: "Blood metals record deleted successfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to delete blood metals", details: String(error) });
+  }
+});
+
 export default router;
