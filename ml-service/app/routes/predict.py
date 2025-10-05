@@ -71,10 +71,11 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
             y_pred = clf.predict(X)
             value = float(y_pred[0])
 
-            if input.features["id"] != "None":
+            patient_id = input.features.get("id")
+            if patient_id not in (None, "None"):
                 await db.prediction.create(
                     data={
-                        "patientId": input.features["id"],
+                        "patientId": patient_id,
                         "model": key,
                         "value": value
                     }
@@ -90,11 +91,12 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
     y_pred = clf.predict(X)
     value = float(y_pred[0])
 
-    if input.features["id"] != "None":
+    patient_id = input.features.get("id")
+    if patient_id not in (None, "None"):
         await db.prediction.create(
             data={
-                "patientId": input.features["id"],
-                "model": model,
+                "patientId": patient_id,
+                "model": key,
                 "value": value
             }
         )

@@ -25,15 +25,16 @@ def map_common_features(input: Dict) -> Dict:
     age_months = input.get("ageYears", 0) * 12 + input.get("ageMonths", 0)
 
     gender = input.get("gender")
-    gender_code = 1 if gender.lower() == "male" else 2 if gender.lower() == "female" else None
+    gender_code = 1 if gender and gender.lower() == "male" else 2 if gender and gender.lower() == "female" else None
+
 
     blood = input.get("bloodMetals", [{}])[0]  # take first record if exists
 
     return {
         "RIDAGEMN": age_months,                            # Age in months
         "RIAGENDR": gender_code,                           # Gender
-        "RIDEXPRG": int(input.get("pregnancyStatus", 0)),  # Pregnant yes/no
-        "RHQ131": input.get("pregnancyCount", 0),          # Pregnancy count
+        "RIDEXPRG": int(input.get("pregnancyStatus") or 0),  # Pregnant yes/no
+        "RHQ131": int(input.get("pregnancyCount", 0) or 0),          # Pregnancy count
         "LBDBPBSI": blood.get("lead_umolL"),               # Lead
         "LBDBCDSI": blood.get("cadmium_umolL"),            # Cadmium
         "LBDTHGSI": blood.get("mercury_umolL"),            # Mercury

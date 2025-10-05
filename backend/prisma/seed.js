@@ -1,8 +1,13 @@
 // prisma/seed.js
 import { PrismaClient } from "@prisma/client";
+import { withOptimize } from "@prisma/extension-optimize";
 import bcrypt from "bcrypt";
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
+
+const prisma = new PrismaClient().$extends(
+  withOptimize({ apiKey: process.env.OPTIMIZE_API_KEY })
+);
 
 async function main() {
   // Seed roles
