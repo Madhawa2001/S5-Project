@@ -104,7 +104,12 @@ export const AuthProvider = ({ children }) => {
           const tokenPayload = JSON.parse(atob(data.accessToken.split(".")[1]))
 
           const rolesArray = tokenPayload.roles || []
-          const userRole = rolesArray.includes("admin") ? "admin" : "doctor"
+          let userRole = "doctor"
+          if (rolesArray.includes("admin")) {
+            userRole = "admin"
+          } else if (rolesArray.includes("nurse")) {
+            userRole = "nurse"
+          }
 
           const userData = {
             id: tokenPayload.userId,
@@ -164,6 +169,7 @@ export const AuthProvider = ({ children }) => {
           email: userData.email,
           password: userData.password,
           name: userData.name,
+          role: userData.role,
         }),
       })
 

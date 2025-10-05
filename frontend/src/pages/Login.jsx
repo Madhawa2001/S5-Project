@@ -53,12 +53,12 @@ export default function Login() {
               type="button"
               onClick={() => setRole("doctor")}
               className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
-                role === "doctor"
+                role === "doctor" || role === "nurse"
                   ? "bg-green-600 text-white shadow-sm"
                   : "bg-transparent text-green-700 hover:bg-green-100"
               }`}
             >
-              Doctor
+             User
             </button>
             <button
               type="button"
@@ -186,14 +186,14 @@ export default function Login() {
             Sign in with Google
           </button>
 
-          {role === "doctor" && (
+          {(role === "doctor" || role === "nurse") && (
             <div className="text-center">
               <p className="text-sm text-green-600 mb-2">Don't have an account?</p>
               <button
                 onClick={() => navigate("/register")}
                 className="w-full border border-green-600 text-green-700 hover:bg-green-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors"
               >
-                Register as New Doctor
+                Register as New User
               </button>
             </div>
           )}

@@ -100,7 +100,7 @@ export default function Home() {
                   Requests
                 </button>
               )}
-              {user?.role === "doctor" && (
+              {(user?.role === "doctor" || user?.role === "nurse") && (
               <button
                 onClick={() => navigate("/patient-data")}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"

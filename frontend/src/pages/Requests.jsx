@@ -11,6 +11,7 @@ export default function Requests() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [processingId, setProcessingId] = useState(null)
+  const [role, setRole] = useState(null)
 
   // Check authentication and authorization on component mount
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function Requests() {
           id: req.id,
           name: req.name,
           email: req.email,
+          role: req.role,
           requestDate: new Date(req.createdAt).toLocaleDateString(),
           status: "pending",
         }))
@@ -66,14 +68,18 @@ export default function Requests() {
    * Handle approve/reject actions for user registration requests
    * @param {string} requestId - User ID to approve or reject
    * @param {string} action - "approve" or "reject"
+   * @param {string} role - Role to assign if approved
    *
    * Approve flow:
    * 1. POST /admin/approve/:userId - Activates the user account
    * 2. POST /admin/assign-role - Assigns "doctor" role to the user
    */
-  const handleRequest = async (requestId, action) => {
+  const handleRequest = async (requestId, action, role) => {
     try {
       setProcessingId(requestId)
+      setRole(role)
+      console.log("Request ID:", requestId)
+      console.log("Role to assign:", role)
 
       if (action === "approve") {
         // Step 1: Approve the user (set isActive to true)
@@ -86,18 +92,18 @@ export default function Requests() {
           throw new Error(errorData.error || "Failed to approve request")
         }
 
-        // Step 2: Assign "doctor" role to the approved user
+        // Step 2: Assign role to the approved user
         const assignRoleResponse = await authenticatedFetch("http://localhost:5000/admin/assign-role", {
           method: "POST",
           body: JSON.stringify({
             userId: requestId,
-            roleName: "doctor",
+            roleName: role,
           }),
         })
 
         if (!assignRoleResponse.ok) {
           const errorData = await assignRoleResponse.json()
-          throw new Error(errorData.error || "Failed to assign doctor role")
+          throw new Error(errorData.error || "Failed to assign role")
         }
 
         // Remove approved request from list
@@ -203,7 +209,7 @@ export default function Requests() {
                     </div>
                     <div className="flex gap-2 ml-4">
                       <button
-                        onClick={() => handleRequest(request.id, "approve")}
+                        onClick={() => handleRequest(request.id, "approve", request.role)}
                         disabled={processingId === request.id}
                         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 transition-colors font-medium flex items-center gap-2"
                       >
@@ -241,7 +247,7 @@ export default function Requests() {
                         )}
                       </button>
                       <button
-                        onClick={() => handleRequest(request.id, "reject")}
+                        onClick={() => handleRequest(request.id, "reject", request.role)}
                         disabled={processingId === request.id}
                         className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-red-400 transition-colors font-medium flex items-center gap-2"
                       >
