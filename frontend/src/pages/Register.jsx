@@ -10,6 +10,7 @@ export default function Register() {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "doctor", // Default role
     // phone: "",
     // specialization: "",
     // licenseNumber: "",
@@ -43,6 +44,7 @@ export default function Register() {
       setLoading(false)
       return
     }
+    console.log(formData)
 
     try {
       const result = await register({
@@ -52,7 +54,7 @@ export default function Register() {
         // phone: formData.phone,
         // specialization: formData.specialization,
         // licenseNumber: formData.licenseNumber,
-        role: "user",
+        role: formData.role,
       })
 
       if (result.success) {
@@ -225,7 +227,29 @@ export default function Register() {
               />
             </div>
           </div>
-
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-green-700">Registering as *</label>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: "doctor" })}
+                className={`flex-1 border border-green-600 text-green-700 hover:bg-green-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors ${
+                  formData.role === "doctor" ? "bg-green-50" : ""
+                }`}
+              >
+                Doctor
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, role: "nurse" })}
+                className={`flex-1 border border-green-600 text-green-700 hover:bg-green-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors ${
+                  formData.role === "nurse" ? "bg-green-50" : ""
+                }`}
+              >
+                Nurse
+              </button>
+            </div>
+          </div>
           <div className="flex gap-3 pt-4">
             <button
               type="button"

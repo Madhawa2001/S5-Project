@@ -1,16 +1,17 @@
 "use client"
-import { useState } from "react"
+
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 
 export default function PatientData() {
   const navigate = useNavigate()
-  const { isLoggedIn, authenticatedFetch } = useAuth()
+  const { isLoggedIn, authenticatedFetch, user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState("")
 
-  // Demographics state
   const [name, setName] = useState("")
+  const [dob, setDob] = useState("")
   const [ageYears, setAgeYears] = useState("")
   const [ageMonths, setAgeMonths] = useState("")
   const [gender, setGender] = useState("")
@@ -18,9 +19,55 @@ export default function PatientData() {
   const [pregnancyStatus, setPregnancyStatus] = useState(false)
   const [diagnosis, setDiagnosis] = useState("")
 
+  // Doctor selection for nurse
+  const [doctors, setDoctors] = useState([])
+  const [selectedDoctorId, setSelectedDoctorId] = useState("")
+
+  // Calculate age from DOB
+  const handleDobChange = (value) => {
+    setDob(value)
+    if (value) {
+      const birthDate = new Date(value)
+      const today = new Date()
+      let years = today.getFullYear() - birthDate.getFullYear()
+      let months = today.getMonth() - birthDate.getMonth()
+      if (months < 0) {
+        years -= 1
+        months += 12
+      }
+      setAgeYears(years)
+      setAgeMonths(months)
+    } else {
+      setAgeYears("")
+      setAgeMonths("")
+    }
+  }
+
+  // Fetch doctors list if user is a nurse
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      if (user?.role === "nurse") {
+        try {
+          const res = await authenticatedFetch("http://localhost:5000/doctors")
+          if (!res.ok) throw new Error("Failed to fetch doctors")
+          const data = await res.json()
+          setDoctors(data)
+        } catch (err) {
+          console.error(err)
+        }
+      }
+    }
+    fetchDoctors()
+  }, [authenticatedFetch, user])
+
   const handleCreatePatient = async (redirectToBloodMetals = false) => {
-    if (!name || !ageYears || !gender) {
-      alert("Please fill in all required fields (Name, Age, Gender)")
+    if (!name || !dob || !gender) {
+      alert("Please fill in all required fields (Name, DOB, Gender)")
+      return
+    }
+
+    if (user.role === "nurse" && !selectedDoctorId) {
+      alert("Please select a doctor")
       return
     }
 
@@ -31,11 +78,12 @@ export default function PatientData() {
       const patientData = {
         name,
         ageYears: Number.parseInt(ageYears),
-        ageMonths: ageMonths ? Number.parseInt(ageMonths) : 0,
+        ageMonths: Number.parseInt(ageMonths),
         gender,
-        pregnancyCount: pregnancyCount ? Number.parseInt(pregnancyCount) : null,
-        pregnancyStatus,
+        pregnancyCount: gender === "female" && pregnancyCount ? Number.parseInt(pregnancyCount) : null,
+        pregnancyStatus: gender === "female" ? pregnancyStatus : false,
         diagnosis: diagnosis || null,
+        doctorId: user.role === "nurse" ? selectedDoctorId : undefined, // Send doctorId if nurse
       }
 
       const response = await authenticatedFetch("http://localhost:5000/patients", {
@@ -51,10 +99,8 @@ export default function PatientData() {
       const createdPatient = await response.json()
 
       if (redirectToBloodMetals) {
-        // Navigate to BloodMetalForm with patient ID
         navigate("/blood-metals", { state: { patientId: createdPatient.id, name: createdPatient.name } })
       } else {
-        // Go back to home
         navigate("/home")
       }
     } catch (error) {
@@ -82,9 +128,7 @@ export default function PatientData() {
 
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-green-800">Patient Data Entry</h1>
-          <p className="text-green-600">
-            Enter patient demographics to add a new record or continue to add blood metal details
-          </p>
+          <p className="text-green-600">Enter patient demographics to add a new record or continue to add blood metal details</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg border border-green-200">
@@ -125,14 +169,23 @@ export default function PatientData() {
 
               <div>
                 <label className="block text-sm font-medium text-green-700">
-                  Age (Years) <span className="text-red-500">*</span>
+                  Date of Birth <span className="text-red-500">*</span>
                 </label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => handleDobChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Age (Years)</label>
                 <input
                   type="number"
                   value={ageYears}
-                  onChange={(e) => setAgeYears(e.target.value)}
-                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
-                  placeholder="Enter age in years"
+                  readOnly
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black bg-gray-100"
                 />
               </div>
 
@@ -141,9 +194,8 @@ export default function PatientData() {
                 <input
                   type="number"
                   value={ageMonths}
-                  onChange={(e) => setAgeMonths(e.target.value)}
-                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
-                  placeholder="0–11 months"
+                  readOnly
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black bg-gray-100"
                 />
               </div>
 
@@ -169,7 +221,10 @@ export default function PatientData() {
                   type="number"
                   value={pregnancyCount}
                   onChange={(e) => setPregnancyCount(e.target.value)}
-                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                  disabled={gender === "male"}
+                  className={`w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black ${
+                    gender === "male" ? "bg-gray-100" : ""
+                  }`}
                   placeholder="Number of pregnancies"
                 />
               </div>
@@ -182,18 +237,20 @@ export default function PatientData() {
                       type="radio"
                       checked={pregnancyStatus === true}
                       onChange={() => setPregnancyStatus(true)}
+                      disabled={gender === "male"}
                       className="text-green-600"
                     />
-                    <span className="text-black">Yes</span>
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
                   </label>
                   <label className="flex items-center gap-2">
                     <input
                       type="radio"
                       checked={pregnancyStatus === false}
                       onChange={() => setPregnancyStatus(false)}
+                      disabled={gender === "male"}
                       className="text-green-600"
                     />
-                    <span className="text-black">No</span>
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
                   </label>
                 </div>
               </div>
@@ -208,6 +265,25 @@ export default function PatientData() {
                   placeholder="Enter diagnosis or clinical notes"
                 />
               </div>
+
+              {/* Doctor selection dropdown for nurse */}
+              {user.role === "nurse" && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-green-700">Assign Doctor <span className="text-red-500">*</span></label>
+                  <select
+                    value={selectedDoctorId}
+                    onChange={(e) => setSelectedDoctorId(e.target.value)}
+                    className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                  >
+                    <option value="">Select a doctor</option>
+                    {doctors.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        {doc.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Buttons */}
