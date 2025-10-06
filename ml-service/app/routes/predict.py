@@ -9,6 +9,7 @@ from app.security import verify_jwt
 from app.models.joblib_model import JoblibModel
 from app.core.db import db
 from app.preprocess.feature_mappers import FEATURE_MAPPERS, COLUMN_ORDERS
+from app.preprocess.hormone_preprocessor import preprocess_domain_rules
 
 router = APIRouter()
 
@@ -27,9 +28,9 @@ MODELS_DIR = Path(__file__).parent.parent / "models" / "saved"
 # --- Load models ---
 MODELS = {
     "hormone": {
-        "testosterone": JoblibModel(MODELS_DIR / "xgb_model_tst_01.joblib"),
-        # "estradiol": JoblibModel(MODELS_DIR / "hormone_estradiol.joblib"),
-        # "shbg": JoblibModel(MODELS_DIR / "hormone_shbg.joblib"),
+        "testosterone": JoblibModel(MODELS_DIR / "xgb_model_tst_03.joblib"),
+        "estradiol": JoblibModel(MODELS_DIR / "xgb_model_est_02.joblib"),
+        "shbg": JoblibModel(MODELS_DIR / "xgb_model_shbg_03.joblib"),
     }
 }
 
@@ -60,6 +61,8 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
 
     if model not in MODELS:
         raise HTTPException(status_code=404, detail=f"Unknown model: {model}")
+    
+    print(input.features)
 
     # --- Special case: hormone (multi-model predictions) ---
     if model == "hormone":
@@ -67,9 +70,12 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
         for sm, clf in MODELS["hormone"].items():
             key = f"hormone_{sm}"
             X = build_feature_df(input.features, key)
+            X = preprocess_domain_rules(X)
             print(X)
             y_pred = clf.predict(X)
             value = float(y_pred[0])
+            print("="*20)
+            print(f"{key} prediction: {value}")
 
             patient_id = input.features.get("id")
             if patient_id not in (None, "None"):
@@ -117,7 +123,7 @@ async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_j
     # --- Multi-model case (like hormone) ---
     if isinstance(MODELS[model], dict):
         for sm, clf in MODELS[model].items():
-            mapper_key = f"{model}_{sm}"   # ✅ correct mapper key
+            mapper_key = f"{model}_{sm}"   
             X = build_feature_df(input.features, mapper_key)
             X_row = X.iloc[0]
 
