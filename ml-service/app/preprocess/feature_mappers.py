@@ -7,15 +7,14 @@ COLUMN_ORDERS = {
         'RIDAGEMN', 'LBDBMNSI', 'RHQ131', 'RIAGENDR',
         'RIDEXPRG', 'BMXBMI'
     ],
-    "hormone_estradiol": [
-        "RIDEXPRG", "LBDBMNSI", "RIDAGEMN", "LBDBSESI", "BMXBMI",
-        "LBDBCDSI", "LBDTHGSI", "LBDBPBSI", "RHQ031", "RHQ160",
-        "is_menopausal", "RHQ200", "RIAGENDR", "BMDSADCM"
-    ],
+    "hormone_estradiol": ['LBXEST', 'LBDBSESI', 'LBDTHGSI', 'LBDBCDSI', 'LBDBPBSI', 'RIDAGEMN',
+       'LBDBMNSI', 'RHQ131', 'RIAGENDR', 'RIDEXPRG', 'BMXBMI', 'RHQ031',
+       'is_menopausal'
+       ],
     "hormone_shbg": [
-        "BMXBMI", "RIDAGEMN", "RIDEXPRG", "LBDBMNSI", "LBDBPBSI",
-        "LBDBSESI", "LBDTHGSI", "LBDBCDSI", "RHQ160",
-        "RIAGENDR", "BMDSADCM"
+        'LBDBSESI', 'LBDTHGSI', 'LBDBCDSI', 'LBDBPBSI',
+        'RIDAGEMN', 'LBDBMNSI', 'RHQ131', 'RIAGENDR',
+        'RIDEXPRG', 'BMXBMI'
     ]
 }
 
@@ -40,7 +39,7 @@ def map_common_features(input: Dict) -> Dict:
         "LBDTHGSI": blood.get("mercury_umolL"),            # Mercury
         "LBDBSESI": blood.get("selenium_umolL"),           # Selenium
         "LBDBMNSI": blood.get("manganese_umolL"),          # Manganese
-        "BMXBMI": None,                                    # TODO: compute if you have weight+height
+        "BMXBMI": input.get("bmi"),                                    # TODO: compute if you have weight+height
         # Extra placeholders for other models
         "RHQ031": None,
         "RHQ160": None,
@@ -56,7 +55,6 @@ def map_testosterone_features(input: Dict) -> Dict:
 
 def map_estradiol_features(input: Dict) -> Dict:
     features = map_common_features(input)
-    # Example: derive menopausal status if available
     features["is_menopausal"] = input.get("is_menopausal", 0)
     return {col: features.get(col) for col in COLUMN_ORDERS["hormone_estradiol"]}
 
