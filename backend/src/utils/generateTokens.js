@@ -12,7 +12,7 @@ export function generateTokens(user) {
   };
 
   const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "45m",
   });
 
   const refreshToken = jwt.sign(
