@@ -84,6 +84,34 @@ router.get(
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
+router.post("/refresh", async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken)
+    return res.status(401).json({ error: "Refresh token required" });
+
+  try {
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET
+    );
+
+    // Fetch user to make sure they're still active
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { roles: { include: { role: true } } },
+    });
+
+    if (!user || !user.isActive)
+      return res.status(403).json({ error: "Account not active or removed" });
+
+    const tokens = generateTokens(user);
+    res.json(tokens);
+  } catch (err) {
+    res.status(403).json({ error: "Invalid or expired refresh token" });
+  }
+});
+
 // ✅ Google callback
 router.get(
   "/google/callback",
