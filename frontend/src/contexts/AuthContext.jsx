@@ -46,36 +46,86 @@ export const AuthProvider = ({ children }) => {
 
   // Initialize authentication state from localStorage on app load
   useEffect(() => {
-    const storedToken = localStorage.getItem("authToken")
-    const storedUser = localStorage.getItem("user")
+    let isMounted = true; // prevents state updates after unmount
 
-    if (storedToken && storedUser) {
+    async function initAuth() {
       try {
-        if (storedToken.startsWith("dummy_")) {
-          setToken(storedToken)
-          setUser(JSON.parse(storedUser))
-          setIsLoggedIn(true)
-        } else {
-          const tokenPayload = JSON.parse(atob(storedToken.split(".")[1]))
-          const currentTime = Date.now() / 1000
+        const storedToken = sessionStorage.getItem("authToken");
+        const storedUser = sessionStorage.getItem("user");
+        const refreshToken = localStorage.getItem("refreshToken");
 
-          if (tokenPayload.exp > currentTime) {
-            setToken(storedToken)
-            setUser(JSON.parse(storedUser))
-            setIsLoggedIn(true)
-          } else {
-            localStorage.removeItem("authToken")
-            localStorage.removeItem("user")
+        // Case 1: Token exists and is still valid
+        if (storedToken && storedUser) {
+          try {
+            const tokenPayload = JSON.parse(atob(storedToken.split(".")[1]));
+            const currentTime = Date.now() / 1000;
+
+            if (tokenPayload.exp > currentTime) {
+              if (isMounted) {
+                setToken(storedToken);
+                setUser(JSON.parse(storedUser));
+                setIsLoggedIn(true);
+              }
+              return;
+            }
+          } catch (err) {
+            console.error("Token decode error:", err);
           }
         }
-      } catch (error) {
-        console.error("Invalid token format:", error)
-        localStorage.removeItem("authToken")
-        localStorage.removeItem("user")
+
+        // Case 2: Token expired → Try refreshing
+        if (refreshToken) {
+          try {
+            const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refreshToken }),
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+
+              // ⚠️ Make sure backend returns both accessToken + user
+              sessionStorage.setItem("authToken", data.accessToken);
+              sessionStorage.setItem("user", JSON.stringify(data.user));
+
+              if (isMounted) {
+                setToken(data.accessToken);
+                setUser(data.user);
+                setIsLoggedIn(true);
+              }
+              return;
+            } else {
+              console.warn("Refresh failed: clearing tokens");
+              localStorage.removeItem("refreshToken");
+              sessionStorage.clear();
+            }
+          } catch (e) {
+            console.error("Refresh error:", e);
+            localStorage.removeItem("refreshToken");
+            sessionStorage.clear();
+          }
+        }
+
+        // Case 3: No valid token or refresh → logged out
+        if (isMounted) {
+          setIsLoggedIn(false);
+          setToken(null);
+          setUser(null);
+        }
+      } finally {
+        // ✅ Always stop loading no matter what
+        if (isMounted) setLoading(false);
       }
     }
-    setLoading(false)
-  }, [])
+
+    initAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
 
   /**
    * Login function - Authenticates user with backend API
@@ -120,9 +170,9 @@ export const AuthProvider = ({ children }) => {
           setToken(data.accessToken)
           setUser(userData)
           setIsLoggedIn(true)
-          localStorage.setItem("authToken", data.accessToken)
-          localStorage.setItem("refreshToken", data.refreshToken)
-          localStorage.setItem("user", JSON.stringify(userData))
+          sessionStorage.setItem("authToken", data.accessToken);
+          sessionStorage.setItem("user", JSON.stringify(userData));
+          localStorage.setItem("refreshToken", data.refreshToken);
 
           console.log("User data stored in localStorage:", userData)
           return { success: true, isDummy: false, user: userData }
@@ -208,9 +258,8 @@ export const AuthProvider = ({ children }) => {
     setIsLoggedIn(false)
     setToken(null)
     setUser(null)
-    localStorage.removeItem("authToken")
-    localStorage.removeItem("refreshToken")
-    localStorage.removeItem("user")
+    sessionStorage.clear();
+    localStorage.removeItem("refreshToken");
   }
 
   /**

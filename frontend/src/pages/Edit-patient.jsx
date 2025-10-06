@@ -126,6 +126,25 @@ export default function EditPatient() {
 
     const handleBasicContinue = () => setStep(2)
 
+    const handleDelete = async () => {
+        if (confirm("Are you sure you want to delete this patient?")) {
+            try {
+                setLoading(true)
+                const res = await authenticatedFetch(`http://localhost:5000/patients/${patientId}`, {
+                    method: "DELETE",
+                })
+                if (!res.ok) throw new Error("Failed to delete patient")
+                alert("Patient deleted successfully!")
+                navigate("/patients")
+            } catch (err) {
+                console.error(err)
+                setError(err.message)
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+
     const handleSubmit = async () => {
         if (user.role === "nurse" && !selectedDoctorId) {
             alert("Please select a doctor")
@@ -192,6 +211,18 @@ export default function EditPatient() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                         {isLoggedIn ? "Back to Home" : "Back to Login"}
+                    </button>
+
+                    {/* Delete Button */}
+                    <button
+                        className="border border-red-300 text-red-700 hover:bg-red-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors flex items-center"
+                        onClick={handleDelete}
+                        disabled={isSubmitting}
+                    >
+                        <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Delete Patient
                     </button>
                 </div>
 
