@@ -31,7 +31,9 @@ MODELS = {
         "testosterone": JoblibModel(MODELS_DIR / "xgb_model_tst_03.joblib"),
         "estradiol": JoblibModel(MODELS_DIR / "xgb_model_est_02.joblib"),
         "shbg": JoblibModel(MODELS_DIR / "xgb_model_shbg_03.joblib"),
-    }
+    },
+    "menopause": JoblibModel(MODELS_DIR / "Menopause_Pipeline_Model.joblib"),
+    "menstrual": JoblibModel(MODELS_DIR / "Menstrual_Pipeline_Model.joblib"),
 }
 
 def build_feature_df(features: Dict, model_key: str) -> pd.DataFrame:
@@ -96,19 +98,20 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
     print(X)
     y_pred = clf.predict(X)
     value = float(y_pred[0])
+    print("="*20)
+    print(f"{model} prediction: {value}")
 
     patient_id = input.features.get("id")
     if patient_id not in (None, "None"):
         await db.prediction.create(
             data={
                 "patientId": patient_id,
-                "model": key,
+                "model": model,
                 "value": value
             }
         )
 
     return {"model": model, "prediction": value}
-
 
 @router.post("/sensitivity/{model}")
 async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_jwt)):
@@ -125,13 +128,24 @@ async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_j
         for sm, clf in MODELS[model].items():
             mapper_key = f"{model}_{sm}"   
             X = build_feature_df(input.features, mapper_key)
+            X = preprocess_domain_rules(X)
             X_row = X.iloc[0]
 
             feature_results = {}
             for feature in input.continuous_features:
                 if feature in X_row.index:
                     x_vals, y_vals = feature_sensitivity(clf, X_row, feature, input.num_points)
-                    feature_results[feature] = {"x": x_vals, "y": y_vals}
+                    
+                    # Get the original feature value and its predicted y
+                    original_x = float(X_row[feature])
+                    original_y = float(clf.predict(pd.DataFrame([X_row]))[0])
+
+                    feature_results[feature] = {
+                        "x": x_vals,
+                        "y": y_vals,
+                        "original_x": original_x,
+                        "original_y": original_y,
+                    }
 
             results[mapper_key] = feature_results
 
@@ -145,8 +159,17 @@ async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_j
         for feature in input.continuous_features:
             if feature in X_row.index:
                 x_vals, y_vals = feature_sensitivity(clf, X_row, feature, input.num_points)
-                feature_results[feature] = {"x": x_vals, "y": y_vals}
+                
+                original_x = float(X_row[feature])
+                original_y = float(clf.predict(pd.DataFrame([X_row]))[0])
+
+                feature_results[feature] = {
+                    "x": x_vals,
+                    "y": y_vals,
+                    "original_x": original_x,
+                    "original_y": original_y,
+                }
 
         results[model] = feature_results
-
+    # print({"model": model, "sensitivity": results})
     return {"model": model, "sensitivity": results}

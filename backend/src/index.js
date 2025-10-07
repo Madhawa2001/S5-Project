@@ -43,6 +43,10 @@ app.get("/", (req, res) => {
   res.send("App API is running.");
 });
 
+app.get("/ping", (req, res) => {
+  res.json({ message: "pong from backend" });
+});
+
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/patients", patientRoutes);
