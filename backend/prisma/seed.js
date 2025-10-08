@@ -1,6 +1,6 @@
 // prisma/seed.js
 import { PrismaClient } from "@prisma/client";
-import { withOptimize } from "@prisma/extension-optimize";
+//import { withOptimize } from "@prisma/extension-optimize";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();

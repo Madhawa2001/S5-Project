@@ -105,4 +105,38 @@ router.post(
   }
 );
 
+/**
+ * ✅ GET /patients/:patientId/predictions
+ * Fetch prediction history for a specific patient
+ */
+router.get(
+  "/patients/:patientId/predictions",
+  verifyToken,
+  requireRole("doctor", "nurse", "admin"),
+  async (req, res) => {
+    try {
+      const { patientId } = req.params;
+
+      const predictions = await prisma.prediction.findMany({
+        where: { patientId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          modelType: true,
+          predictionValue: true,
+          createdAt: true,
+          createdBy: {
+            select: { id: true, name: true, role: true },
+          },
+        },
+      });
+
+      res.json(predictions);
+    } catch (err) {
+      console.error("Error fetching predictions:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 export default router;
