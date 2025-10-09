@@ -85,19 +85,35 @@ router.post("/login", async (req, res) => {
  */
 router.get("/me", verifyToken, async (req, res) => {
   try {
+    const userId = req.user.userId; // ✅ this matches your token payload
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing user ID in token" });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
+      where: { id: userId }, // ✅ use the variable, not req.user.id
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
         isActive: true,
+        roles: {
+          select: {
+            role: { select: { name: true } },
+          },
+        },
       },
     });
 
     if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+
+    const formatted = {
+      ...user,
+      roles: user.roles.map((r) => r.role.name),
+    };
+
+    res.json(formatted);
   } catch (err) {
     console.error("Error fetching current user:", err);
     res.status(500).json({ error: "Internal server error" });

@@ -35,7 +35,9 @@ def map_common_features(input: Dict) -> Dict:
     gender_code = 1 if gender and gender.lower() == "male" else 2 if gender and gender.lower() == "female" else None
 
 
-    blood = input.get("bloodMetals", [{}])[0]  # take first record if exists
+    blood_metals = input.get("bloodMetals") or [{}]
+    blood = blood_metals[0] if isinstance(blood_metals, list) and blood_metals else {}
+
 
     return {
         "RIDAGEMN": age_months,                            # Age in months
@@ -60,6 +62,8 @@ def map_common_features(input: Dict) -> Dict:
         "LBXTHG": blood.get("mercury_umolL") / 4.99 if blood.get("mercury_umolL") else None,
         "LBXBSE": blood.get("selenium_umolL") / 0.01266 if blood.get("selenium_umolL") else None,
         "LBXBMN": blood.get("manganese_umolL") / 18.20 if blood.get("manganese_umolL") else None,
+        # "DMDMARTL": 1,
+
     }
 
 # --- Model-specific mappers ---
@@ -82,6 +86,7 @@ def map_menopause_features(input: Dict) -> Dict:
 
 def map_menstrual_features(input: Dict) -> Dict:
     features = map_common_features(input)
+    features["DMDMARTL"] = '1'
     return {col: features.get(col) for col in COLUMN_ORDERS["menstrual"]}
 
 

@@ -21,6 +21,9 @@ class SensitivityInput(BaseModel):
     continuous_features: List[str] = [
         "LBDBPBSI", "LBDBCDSI", "LBDTHGSI", "LBDBSESI", "LBDBMNSI"
     ]
+    continuous_features_2: List[str] = [
+        "LBDBPB", "LBDBCD", "LBDTHG", "LBDBSE", "LBDBMN"
+    ]
     num_points: int = 1000
 
 MODELS_DIR = Path(__file__).parent.parent / "models" / "saved"
@@ -128,22 +131,41 @@ async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_j
         for sm, clf in MODELS[model].items():
             mapper_key = f"{model}_{sm}"   
             X = build_feature_df(input.features, mapper_key)
-            X = preprocess_domain_rules(X)
+
+            # ✅ only hormone models get preprocessed
+            if model == "hormone":
+                X = preprocess_domain_rules(X)
+
             X_row = X.iloc[0]
 
             feature_results = {}
             for feature in input.continuous_features:
                 if feature in X_row.index:
+                    base_val = X_row[feature]
+
+                    if base_val is None or pd.isna(base_val):
+                        print(f"⚠️ Skipping '{feature}' — missing or invalid base value")
+                        continue
+                    try:
+                        base_val = float(base_val)
+                    except (TypeError, ValueError):
+                        print(f"⚠️ Skipping '{feature}' — non-numeric base value ({base_val})")
+                        continue
+
                     x_vals, y_vals = feature_sensitivity(clf, X_row, feature, input.num_points)
-                    
-                    # Get the original feature value and its predicted y
-                    original_x = float(X_row[feature])
-                    original_y = float(clf.predict(pd.DataFrame([X_row]))[0])
+                    if not x_vals or not y_vals:
+                        continue
+
+                    try:
+                        original_y = float(clf.predict(pd.DataFrame([X_row]))[0])
+                    except Exception as e:
+                        print(f"⚠️ Model prediction failed for '{feature}': {e}")
+                        continue
 
                     feature_results[feature] = {
                         "x": x_vals,
                         "y": y_vals,
-                        "original_x": original_x,
+                        "original_x": base_val,
                         "original_y": original_y,
                     }
 
@@ -155,21 +177,39 @@ async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_j
         X = build_feature_df(input.features, model)
         X_row = X.iloc[0]
 
+
         feature_results = {}
-        for feature in input.continuous_features:
+        for feature in input.continuous_features_2:
             if feature in X_row.index:
+                base_val = X_row[feature]
+
+                if base_val is None or pd.isna(base_val):
+                    print(f"⚠️ Skipping '{feature}' — missing or invalid base value")
+                    continue
+                try:
+                    base_val = float(base_val)
+                except (TypeError, ValueError):
+                    print(f"⚠️ Skipping '{feature}' — non-numeric base value ({base_val})")
+                    continue
+
                 x_vals, y_vals = feature_sensitivity(clf, X_row, feature, input.num_points)
-                
-                original_x = float(X_row[feature])
-                original_y = float(clf.predict(pd.DataFrame([X_row]))[0])
+                if not x_vals or not y_vals:
+                    continue
+
+                try:
+                    original_y = float(clf.predict(pd.DataFrame([X_row]))[0])
+                except Exception as e:
+                    print(f"⚠️ Model prediction failed for '{feature}': {e}")
+                    continue
 
                 feature_results[feature] = {
                     "x": x_vals,
                     "y": y_vals,
-                    "original_x": original_x,
+                    "original_x": base_val,
                     "original_y": original_y,
                 }
 
         results[model] = feature_results
-    # print({"model": model, "sensitivity": results})
+
+    print({"model": model, "sensitivity": results})
     return {"model": model, "sensitivity": results}
