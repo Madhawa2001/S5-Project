@@ -22,7 +22,7 @@ class SensitivityInput(BaseModel):
         "LBDBPBSI", "LBDBCDSI", "LBDTHGSI", "LBDBSESI", "LBDBMNSI"
     ]
     continuous_features_2: List[str] = [
-        "LBDBPB", "LBDBCD", "LBDTHG", "LBDBSE", "LBDBMN"
+        "LBXBPB", "LBXBCD", "LBXTHG", "LBXSE", "LBXBMN"
     ]
     num_points: int = 1000
 

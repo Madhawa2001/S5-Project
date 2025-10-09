@@ -24,6 +24,16 @@ COLUMN_ORDERS = {
     'RHQ305', 'DMDMARTL', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN']
 }
 
+MARITAL_STATUS_MAP = {
+    "MARRIED": 1,
+    "WIDOWED": 2,
+    "DIVORCED": 3,
+    "SEPARATED": 4,
+    "NEVER_MARRIED": 5,
+    "LIVING_WITH_PARTNER": 6,
+    "UNKNOWN": 7
+}
+
 # --- Common mapper ---
 def map_common_features(input: Dict) -> Dict:
     """Extract shared features from the API input into NHANES-style codes."""
@@ -37,6 +47,9 @@ def map_common_features(input: Dict) -> Dict:
 
     blood_metals = input.get("bloodMetals") or [{}]
     blood = blood_metals[0] if isinstance(blood_metals, list) and blood_metals else {}
+
+    marital_status = input.get("maritalStatus")
+    marital_code = MARITAL_STATUS_MAP.get(str(marital_status).upper()) if marital_status else None
 
 
     return {
@@ -62,8 +75,13 @@ def map_common_features(input: Dict) -> Dict:
         "LBXTHG": blood.get("mercury_umolL") / 4.99 if blood.get("mercury_umolL") else None,
         "LBXBSE": blood.get("selenium_umolL") / 0.01266 if blood.get("selenium_umolL") else None,
         "LBXBMN": blood.get("manganese_umolL") / 18.20 if blood.get("manganese_umolL") else None,
-        # "DMDMARTL": 1,
-
+        "DMDMARTL": marital_code,
+        "RHD280": 1 if input.get("hadHysterectomy") else 2,        
+        "RHQ166": input.get("vaginalDeliveries"),
+        "RHQ540": 1 if input.get("everUsedFemaleHormones") else 2,  
+        "RHQ305": 1 if input.get("ovariesRemoved") else 2,  
+        "RHQ074": 1 if input.get("triedYearPregnant") else 2,  
+        "RHQ420": 1 if input.get("everUsedBirthControlPills") else 2,  
     }
 
 # --- Model-specific mappers ---
@@ -82,11 +100,17 @@ def map_shbg_features(input: Dict) -> Dict:
 
 def map_menopause_features(input: Dict) -> Dict:
     features = map_common_features(input)
+    # features["RHD280"] = str(features["RHD280"])
+    features["RHQ074"] = str(features["RHQ074"])
+    features["RHQ420"] = str(features["RHQ420"])
     return {col: features.get(col) for col in COLUMN_ORDERS["menopause"]}
 
 def map_menstrual_features(input: Dict) -> Dict:
     features = map_common_features(input)
-    features["DMDMARTL"] = '1'
+    features["DMDMARTL"] = str(features["DMDMARTL"])
+    features["RHQ540"] = str(features["RHQ540"])
+    features["RHQ305"] = str(features["RHQ305"])
+    features["RHD280"] = str(features["RHD280"])
     return {col: features.get(col) for col in COLUMN_ORDERS["menstrual"]}
 
 
