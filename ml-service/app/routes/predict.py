@@ -211,5 +211,5 @@ async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_j
 
         results[model] = feature_results
 
-    print({"model": model, "sensitivity": results})
+    # print({"model": model, "sensitivity": results})
     return {"model": model, "sensitivity": results}
