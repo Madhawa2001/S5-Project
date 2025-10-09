@@ -18,6 +18,11 @@ export default function Home() {
       return
     }
 
+    if (user?.role === "admin") {
+      navigate("/requests")
+      return
+    }
+
     fetchPatients()
   }, [user, authenticatedFetch, navigate, isLoggedIn])
   console.log(user)
@@ -101,12 +106,12 @@ export default function Home() {
                 </button>
               )}
               {(user?.role === "doctor" || user?.role === "nurse") && (
-              <button
-                onClick={() => navigate("/patient-data")}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
-              >
-                New Patient
-              </button>
+                <button
+                  onClick={() => navigate("/patient-data")}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+                >
+                  New Patient
+                </button>
               )}
               <button
                 onClick={handleLogout}
