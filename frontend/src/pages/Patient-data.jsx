@@ -19,6 +19,17 @@ export default function PatientData() {
   const [gender, setGender] = useState("")
   const [pregnancyCount, setPregnancyCount] = useState("")
   const [pregnancyStatus, setPregnancyStatus] = useState(false)
+  const [nic, setNic] = useState("")
+  const [vaginalDeliveries, setVaginalDeliveries] = useState("")
+  const [triedYearPregnant, setTriedYearPregnant] = useState(false)
+  const [everUsedFemaleHormones, setEverUsedFemaleHormones] = useState(false)
+  const [hadHysterectomy, setHadHysterectomy] = useState(false)
+  const [ovariesRemoved, setOvariesRemoved] = useState(false)
+  const [everUsedBirthControlPills, setEverUsedBirthControlPills] = useState(false)
+  const [maritalStatus, setMaritalStatus] = useState("")
+  const [contactNumber, setContactNumber] = useState("")
+  const [email, setEmail] = useState("")
+  const [address, setAddress] = useState("")
   const [diagnosis, setDiagnosis] = useState("")
 
   // Doctor selection for nurse
@@ -83,14 +94,45 @@ export default function PatientData() {
         name,
         // ageYears: Number.parseInt(ageYears),
         // ageMonths: Number.parseInt(ageMonths),
+        nic: nic || null,
         dob: dob ? new Date(dob) : null,
         gender,
         heightCm: heightCm ? Number.parseFloat(heightCm) : null,
         weightKg: weightKg ? Number.parseFloat(weightKg) : null,
         pregnancyCount: gender === "female" && pregnancyCount ? Number.parseInt(pregnancyCount) : null,
         pregnancyStatus: gender === "female" ? pregnancyStatus : false,
-        diagnosis: diagnosis || null,
+        triedYearPregnant: gender === "female" ? triedYearPregnant : false,
+        vaginalDeliveries: gender === "female" && pregnancyCount >= vaginalDeliveries ? Number.parseInt(vaginalDeliveries) : null,
+        everUsedFemaleHormones: gender === "female" ? everUsedFemaleHormones : false,
+        hadHysterectomy: gender === "female" ? hadHysterectomy : false,
+        ovariesRemoved: gender === "female" ? ovariesRemoved : false,
+        everUsedBirthControlPills: gender === "female" ? everUsedBirthControlPills : false,
+        maritalStatus: maritalStatus || null,
+        contactNumber: contactNumber || null,
+        email: email || null,
+        address: address || null,
+        // diagnosis: diagnosis || null,
         doctorId: user.role === "nurse" ? selectedDoctorId : undefined, // Send doctorId if nurse
+        name,
+        // nic,
+        // dob,
+        // gender,
+        // heightCm,
+        // weightKg,
+        // pregnancyCount,
+        // pregnancyStatus,
+        // triedYearPregnant,
+        // vaginalDeliveries,
+        // everUsedFemaleHormones,
+        // hadHysterectomy,
+        // ovariesRemoved,
+        // everUsedBirthControlPills,
+        // maritalStatus,
+        // contactNumber,
+        // email,
+        // address,
+        // diagnosis,
+        // doctorId,
       }
 
       const response = await authenticatedFetch("http://localhost:5000/patients", {
@@ -186,6 +228,50 @@ export default function PatientData() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-green-700">NIC</label>
+                <input
+                  type="text"
+                  value={nic}
+                  onChange={(e) => setNic(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                  placeholder="Enter NIC number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Contact Number</label>
+                <input
+                  type="text"
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                  placeholder="Enter contact number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                  placeholder="Enter email address"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Address</label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                  placeholder="Enter residential address"
+                />
+              </div>
+
               {/* <div>
                 <label className="block text-sm font-medium text-green-700">Age (Years)</label>
                 <input
@@ -245,6 +331,26 @@ export default function PatientData() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-green-700">
+                  Marital status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={maritalStatus}
+                  onChange={(e) => setMaritalStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                >
+                  <option value="">Select marital status</option>
+                  <option value="MARRIED">Married</option>
+                  <option value="WIDOWED">Widowed</option>
+                  <option value="DIVORCED">Divorced</option>
+                  <option value="SEPARATED">Separated</option>
+                  <option value="NEVER_MARRIED">Never married</option>
+                  <option value="LIVING_WITH_PARTNER">Living with partner</option>
+                  <option value="UNKNOWN">Refuse</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-green-700">Pregnancy Count</label>
                 <input
                   type="number"
@@ -254,6 +360,28 @@ export default function PatientData() {
                   className={`w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black ${gender === "male" ? "bg-gray-100" : ""
                     }`}
                   placeholder="Number of pregnancies"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">How many vaginal deliveries?</label>
+                <input
+                  type="number"
+                  value={vaginalDeliveries}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow value <= pregnancyCount
+                    if (pregnancyCount !== "" && Number(value) > Number(pregnancyCount)) {
+                      setVaginalDeliveries(pregnancyCount);
+                    } else {
+                      setVaginalDeliveries(value);
+                    }
+                  }}
+                  disabled={gender === "male"}
+                  min={0}
+                  max={pregnancyCount !== "" ? pregnancyCount : undefined}
+                  className={`w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black ${gender === "male" ? "bg-gray-100" : ""}`}
+                  placeholder="Number of vaginal deliveries"
                 />
               </div>
 
@@ -275,6 +403,136 @@ export default function PatientData() {
                       type="radio"
                       checked={pregnancyStatus === false}
                       onChange={() => setPregnancyStatus(false)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Tried to get pregnant for a year</label>
+                <div className="flex gap-4 mt-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={triedYearPregnant === true}
+                      onChange={() => setTriedYearPregnant(true)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={triedYearPregnant === false}
+                      onChange={() => setTriedYearPregnant(false)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Ever used female hormones</label>
+                <div className="flex gap-4 mt-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={everUsedFemaleHormones === true}
+                      onChange={() => setEverUsedFemaleHormones(true)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={everUsedFemaleHormones === false}
+                      onChange={() => setEverUsedFemaleHormones(false)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Had hysterectomy</label>
+                <div className="flex gap-4 mt-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={hadHysterectomy === true}
+                      onChange={() => setHadHysterectomy(true)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={hadHysterectomy === false}
+                      onChange={() => setHadHysterectomy(false)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Ovaries removed</label>
+                <div className="flex gap-4 mt-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={ovariesRemoved === true}
+                      onChange={() => setOvariesRemoved(true)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={ovariesRemoved === false}
+                      onChange={() => setOvariesRemoved(false)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-green-700">Ever used birth control pills</label>
+                <div className="flex gap-4 mt-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={everUsedBirthControlPills === true}
+                      onChange={() => setEverUsedBirthControlPills(true)}
+                      disabled={gender === "male"}
+                      className="text-green-600"
+                    />
+                    <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={everUsedBirthControlPills === false}
+                      onChange={() => setEverUsedBirthControlPills(false)}
                       disabled={gender === "male"}
                       className="text-green-600"
                     />

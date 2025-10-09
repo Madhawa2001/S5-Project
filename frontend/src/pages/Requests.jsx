@@ -140,12 +140,12 @@ export default function Requests() {
               <p className="text-sm text-green-600">Review and approve user registration requests</p>
             </div>
             <div className="flex items-center gap-3">
-              <button
+              {/* <button
                 onClick={() => navigate("/home")}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
               >
                 Back to Dashboard
-              </button>
+              </button> */}
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium"

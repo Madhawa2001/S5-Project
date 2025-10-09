@@ -13,7 +13,7 @@ import Requests from "./pages/Requests"
 import { useAuth } from "./contexts/AuthContext"
 
 function App() {
-  const { isLoggedIn, loading } = useAuth()
+  const { isLoggedIn, loading, user } = useAuth()
 
   if (loading) {
     return (
@@ -38,7 +38,16 @@ function App() {
         <Route path="/report" element={<Report />} />
         <Route path="/requests" element={<Requests />} />
 
-        <Route path="*" element={<Navigate to={isLoggedIn ? "/home" : "/"} />} />
+        <Route
+          path="*"
+          element={
+            isLoggedIn
+              ? user?.role === "admin"
+                ? <Navigate to="/requests" />
+                : <Navigate to="/home" />
+              : <Navigate to="/" />
+          }
+        />
       </Routes>
     </Router>
   )

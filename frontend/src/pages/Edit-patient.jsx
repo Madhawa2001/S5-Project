@@ -21,6 +21,7 @@ export default function EditPatient() {
     // Basic Details
     const [name, setName] = useState("")
     const [dob, setDob] = useState("")
+    const [nic, setNic] = useState("")
     // const [ageYears, setAgeYears] = useState("")
     // const [ageMonths, setAgeMonths] = useState("")
     const [heightCm, setHeightCm] = useState("")
@@ -28,6 +29,16 @@ export default function EditPatient() {
     const [gender, setGender] = useState("")
     const [pregnancyStatus, setPregnancyStatus] = useState(false)
     const [pregnancyCount, setPregnancyCount] = useState("")
+    const [triedYearPregnant, setTriedYearPregnant] = useState(false)
+    const [vaginalDeliveries, setVaginalDeliveries] = useState("")
+    const [everUsedFemaleHormones, setEverUsedFemaleHormones] = useState(false)
+    const [hadHysterectomy, setHadHysterectomy] = useState(false)
+    const [ovariesRemoved, setOvariesRemoved] = useState(false)
+    const [everUsedBirthControlPills, setEverUsedBirthControlPills] = useState(false)
+    const [maritalStatus, setMaritalStatus] = useState("")
+    const [contactNumber, setContactNumber] = useState("")
+    const [email, setEmail] = useState("")
+    const [address, setAddress] = useState("")
     const [diagnosis, setDiagnosis] = useState("")
 
     // Doctor selection for nurse
@@ -78,11 +89,22 @@ export default function EditPatient() {
                     setDob(approxDOB.toISOString().split("T")[0])
                     // calculateAge(approxDOB.toISOString().split("T")[0])
                 }
+                setNic(data.nic || "")
                 setGender(data.gender || "")
                 setHeightCm(data.heightCm ?? "")
                 setWeightKg(data.weightKg ?? "")
                 setPregnancyStatus(data.pregnancyStatus || false)
                 setPregnancyCount(data.pregnancyCount || "")
+                setTriedYearPregnant(data.triedYearPregnant || false)
+                setVaginalDeliveries(data.vaginalDeliveries || "")
+                setEverUsedFemaleHormones(data.everUsedFemaleHormones || false)
+                setHadHysterectomy(data.hadHysterectomy || false)
+                setOvariesRemoved(data.ovariesRemoved || false)
+                setEverUsedBirthControlPills(data.everUsedBirthControlPills || false)
+                setMaritalStatus(data.maritalStatus || "")
+                setContactNumber(data.contactNumber || "")
+                setEmail(data.email || "")
+                setAddress(data.address || "")
                 setDiagnosis(data.diagnosis || "")
 
                 // Preselect assigned doctor if nurse
@@ -159,12 +181,23 @@ export default function EditPatient() {
                 // ageYears: Number.parseInt(ageYears),
                 // ageMonths: Number.parseInt(ageMonths),
                 dob,
+                nic: nic || null,
                 gender,
                 heightCm: heightCm ? Number.parseFloat(heightCm) : null,
                 weightKg: weightKg ? Number.parseFloat(weightKg) : null,
                 pregnancyStatus: gender === "female" ? pregnancyStatus : false,
                 pregnancyCount: gender === "female" ? (pregnancyCount ? Number.parseInt(pregnancyCount) : 0) : null,
-                diagnosis,
+                triedYearPregnant: gender === "female" ? triedYearPregnant : false,
+                vaginalDeliveries: gender === "female" && pregnancyCount >= vaginalDeliveries ? Number.parseInt(vaginalDeliveries) : null,
+                everUsedFemaleHormones: gender === "female" ? everUsedFemaleHormones : false,
+                hadHysterectomy: gender === "female" ? hadHysterectomy : false,
+                ovariesRemoved: gender === "female" ? ovariesRemoved : false,
+                everUsedBirthControlPills: gender === "female" ? everUsedBirthControlPills : false,
+                maritalStatus: maritalStatus || null,
+                contactNumber: contactNumber || null,
+                email: email || null,
+                address: address || null,
+                // diagnosis,
                 doctorId: user.role === "nurse" ? selectedDoctorId : undefined,
             }
 
@@ -256,6 +289,26 @@ export default function EditPatient() {
                                     <input type="date" value={dob} onChange={e => setDob(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
                                 </div>
 
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">NIC</label>
+                                    <input type="text" value={nic} onChange={e => setNic(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Contact Number</label>
+                                    <input type="text" value={contactNumber} onChange={e => setContactNumber(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Email</label>
+                                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Address</label>
+                                    <input type="text" value={address} onChange={e => setAddress(e.target.value)} className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black" />
+                                </div>
+
                                 {/* <div>
                                     <label className="block text-sm font-medium text-green-700">Age (Years)</label>
                                     <input type="number" value={ageYears} readOnly className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black bg-gray-100" />
@@ -287,6 +340,26 @@ export default function EditPatient() {
                                 </div>
 
                                 <div>
+                                    <label className="block text-sm font-medium text-green-700">
+                                        Marital status <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={maritalStatus}
+                                        onChange={(e) => setMaritalStatus(e.target.value)}
+                                        className="w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black"
+                                    >
+                                        <option value="">Select marital status</option>
+                                        <option value="MARRIED">Married</option>
+                                        <option value="WIDOWED">Widowed</option>
+                                        <option value="DIVORCED">Divorced</option>
+                                        <option value="SEPARATED">Separated</option>
+                                        <option value="NEVER_MARRIED">Never married</option>
+                                        <option value="LIVING_WITH_PARTNER">Living with partner</option>
+                                        <option value="UNKNOWN">Refuse</option>
+                                    </select>
+                                </div>
+
+                                <div>
                                     <label className="block text-sm font-medium text-green-700">Pregnancy Count</label>
                                     <input
                                         type="number"
@@ -294,6 +367,28 @@ export default function EditPatient() {
                                         onChange={e => setPregnancyCount(e.target.value)}
                                         disabled={gender === "male"}
                                         className={`w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black ${gender === "male" ? "bg-gray-100" : ""}`}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">How many vaginal deliveries?</label>
+                                    <input
+                                        type="number"
+                                        value={vaginalDeliveries}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Only allow value <= pregnancyCount
+                                            if (pregnancyCount !== "" && Number(value) > Number(pregnancyCount)) {
+                                                setVaginalDeliveries(pregnancyCount);
+                                            } else {
+                                                setVaginalDeliveries(value);
+                                            }
+                                        }}
+                                        disabled={gender === "male"}
+                                        min={0}
+                                        max={pregnancyCount !== "" ? pregnancyCount : undefined}
+                                        className={`w-full px-3 py-2 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 text-black ${gender === "male" ? "bg-gray-100" : ""}`}
+                                        placeholder="Number of vaginal deliveries"
                                     />
                                 </div>
 
@@ -306,6 +401,136 @@ export default function EditPatient() {
                                         </label>
                                         <label className="flex items-center gap-2">
                                             <input type="radio" checked={pregnancyStatus === false} onChange={() => setPregnancyStatus(false)} disabled={gender === "male"} className="text-green-600" />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Tried to get pregnant for a year</label>
+                                    <div className="flex gap-4 mt-2">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={triedYearPregnant === true}
+                                                onChange={() => setTriedYearPregnant(true)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={triedYearPregnant === false}
+                                                onChange={() => setTriedYearPregnant(false)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Ever used female hormones</label>
+                                    <div className="flex gap-4 mt-2">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={everUsedFemaleHormones === true}
+                                                onChange={() => setEverUsedFemaleHormones(true)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={everUsedFemaleHormones === false}
+                                                onChange={() => setEverUsedFemaleHormones(false)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Had hysterectomy</label>
+                                    <div className="flex gap-4 mt-2">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={hadHysterectomy === true}
+                                                onChange={() => setHadHysterectomy(true)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={hadHysterectomy === false}
+                                                onChange={() => setHadHysterectomy(false)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Ovaries removed</label>
+                                    <div className="flex gap-4 mt-2">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={ovariesRemoved === true}
+                                                onChange={() => setOvariesRemoved(true)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={ovariesRemoved === false}
+                                                onChange={() => setOvariesRemoved(false)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-green-700">Ever used birth control pills</label>
+                                    <div className="flex gap-4 mt-2">
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={everUsedBirthControlPills === true}
+                                                onChange={() => setEverUsedBirthControlPills(true)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
+                                            <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>Yes</span>
+                                        </label>
+                                        <label className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={everUsedBirthControlPills === false}
+                                                onChange={() => setEverUsedBirthControlPills(false)}
+                                                disabled={gender === "male"}
+                                                className="text-green-600"
+                                            />
                                             <span className={`text-black ${gender === "male" ? "text-gray-400" : ""}`}>No</span>
                                         </label>
                                     </div>
