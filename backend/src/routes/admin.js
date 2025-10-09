@@ -3,7 +3,7 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { verifyToken, requireRole } from "../middleware/auth.js";
 
-const router = express.Router();
+const router = express.Router(verifyToken, requireRole("admin"));
 const prisma = new PrismaClient();
 
 // ✅ List users pending approval (with roles)
@@ -101,6 +101,41 @@ router.get("/logs", async (req, res) => {
   });
 
   res.json({ page, pageSize, logs });
+});
+
+// ✅ Get all users (admin only)
+router.get("/users", verifyToken, requireRole("admin"), async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActive: true,
+        createdAt: true,
+        roles: {
+          select: {
+            role: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Flatten role names
+    const formatted = users.map((user) => ({
+      ...user,
+      roles: user.roles.map((r) => r.role.name),
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    console.error("❌ Error fetching all users:", error);
+    res.status(500).json({
+      error: "Failed to fetch users",
+      details: String(error),
+    });
+  }
 });
 
 export default router;

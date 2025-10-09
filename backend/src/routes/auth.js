@@ -6,6 +6,7 @@ import passport from "passport";
 import dotenv from "dotenv";
 import { generateTokens } from "../utils/generateTokens.js";
 import { authLimiter } from "../middleware/rateLimit.js";
+import { verifyToken, requireRole } from "../middleware/auth.js";
 
 dotenv.config();
 const router = express.Router();
@@ -76,6 +77,68 @@ router.post("/login", async (req, res) => {
 
   const tokens = generateTokens(user);
   res.json(tokens);
+});
+
+/**
+ * ✅ GET /auth/me
+ * Returns the currently authenticated user's basic info
+ */
+router.get("/me", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.userId; // ✅ this matches your token payload
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing user ID in token" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }, // ✅ use the variable, not req.user.id
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActive: true,
+        roles: {
+          select: {
+            role: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const formatted = {
+      ...user,
+      roles: user.roles.map((r) => r.role.name),
+    };
+
+    res.json(formatted);
+  } catch (err) {
+    console.error("Error fetching current user:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * ✅ POST /auth/logout
+ * Clears the auth cookie or invalidates the token (depending on your setup)
+ */
+router.post("/logout", async (req, res) => {
+  try {
+    // If using cookies for refresh tokens
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    // Optionally: store blacklisted tokens in Redis or DB if needed
+    res.json({ message: "Logged out successfully" });
+  } catch (err) {
+    console.error("Logout error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // ✅ Google OAuth (start)

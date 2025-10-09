@@ -14,44 +14,54 @@ router.use(verifyToken, requireRole("doctor", "nurse"));
  * - Nurse can create patient without doctor assignment
  * - Doctor can create patient assigned to themselves
  */
+// ✅ Add a patient (updated)
 router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
   try {
     const {
       name,
+      nic,
       dob,
       gender,
       heightCm,
       weightKg,
       pregnancyCount,
       pregnancyStatus,
+      triedYearPregnant,
+      vaginalDeliveries,
+      everUsedFemaleHormones,
+      hadHysterectomy,
+      ovariesRemoved,
+      everUsedBirthControlPills,
+      maritalStatus,
+      contactNumber,
+      email,
+      address,
       diagnosis,
       doctorId, // optional for nurse
     } = req.body;
 
     const userRoles = req.dbUser.roles.map((r) => r.role.name);
 
-    // If logged-in user is a doctor, auto-assign them
+    // If doctor logs in → auto-assign to them
     let assignedDoctorId = doctorId;
     if (userRoles.includes("doctor")) {
       assignedDoctorId = req.user.userId;
     }
 
-    // Parse and calculate
+    // Calculate Age
     const parsedDob = new Date(dob);
     const now = new Date();
-
-    let ageYears = null;
-    let ageMonths = null;
+    let ageYears = null,
+      ageMonths = null;
     if (!isNaN(parsedDob)) {
       const diffMs = now - parsedDob;
       const diffDate = new Date(diffMs);
       ageYears = diffDate.getUTCFullYear() - 1970;
       ageMonths = now.getMonth() - parsedDob.getMonth();
-      if (ageMonths < 0) {
-        ageMonths += 12;
-      }
+      if (ageMonths < 0) ageMonths += 12;
     }
 
+    // Calculate BMI
     const parsedHeight = heightCm ? parseFloat(heightCm) : null;
     const parsedWeight = weightKg ? parseFloat(weightKg) : null;
     const bmi =
@@ -59,9 +69,9 @@ router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
         ? parsedWeight / (parsedHeight / 100) ** 2
         : null;
 
-    // Prepare Prisma data
     const patientData = {
       name,
+      nic,
       dob: parsedDob,
       gender,
       heightCm: parsedHeight,
@@ -71,6 +81,16 @@ router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
       ageMonths,
       pregnancyCount: pregnancyCount ? parseInt(pregnancyCount) : null,
       pregnancyStatus: pregnancyStatus ?? null,
+      triedYearPregnant,
+      vaginalDeliveries,
+      everUsedFemaleHormones,
+      hadHysterectomy,
+      ovariesRemoved,
+      everUsedBirthControlPills,
+      maritalStatus,
+      contactNumber,
+      email,
+      address,
       diagnosis,
       doctor: assignedDoctorId
         ? { connect: { id: assignedDoctorId } }
@@ -78,14 +98,59 @@ router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
     };
 
     const patient = await prisma.patient.create({ data: patientData });
-
     res.json(patient);
   } catch (error) {
     console.error("❌ Error creating patient:", error);
-    res.status(500).json({
-      error: "Failed to add patient",
-      details: String(error),
+    res
+      .status(500)
+      .json({ error: "Failed to add patient", details: String(error) });
+  }
+});
+
+/**
+ * 🔍 Search patients by NIC or name
+ * - Doctor: only their own patients
+ * - Nurse: can search all
+ */
+router.get("/search", audit("SEARCH_PATIENTS"), async (req, res) => {
+  try {
+    const { q } = req.query; // search term
+    if (!q)
+      return res.status(400).json({ error: "Query parameter 'q' required" });
+
+    const userRoles = req.dbUser.roles.map((r) => r.role.name);
+    const where = {
+      OR: [
+        { nic: { contains: q, mode: "insensitive" } },
+        { name: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+      ],
+    };
+
+    // Restrict doctors to their own patients
+    if (userRoles.includes("doctor")) {
+      where["doctorId"] = req.user.userId;
+    }
+
+    const patients = await prisma.patient.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        nic: true,
+        gender: true,
+        ageYears: true,
+        doctor: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
     });
+
+    res.json(patients);
+  } catch (error) {
+    console.error("❌ Search failed:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to search patients", details: String(error) });
   }
 });
 
@@ -273,5 +338,39 @@ router.delete("/:patientId", audit("DELETE_PATIENT"), async (req, res) => {
     });
   }
 });
+
+/**
+ * ✅ GET /patients/:patientId/predictions
+ * Fetch prediction history for a specific patient
+ */
+router.get(
+  "/predictions/:patientId",
+  verifyToken,
+  requireRole("doctor"),
+  async (req, res) => {
+    try {
+      const { patientId } = req.params;
+
+      const predictions = await prisma.prediction.findMany({
+        where: { patientId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          modelType: true,
+          predictionValue: true,
+          createdAt: true,
+          createdBy: {
+            select: { id: true, name: true, role: true },
+          },
+        },
+      });
+
+      res.json(predictions);
+    } catch (err) {
+      console.error("Error fetching predictions:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
 
 export default router;
