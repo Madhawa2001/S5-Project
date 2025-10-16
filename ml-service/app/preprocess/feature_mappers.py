@@ -113,6 +113,10 @@ def map_menstrual_features(input: Dict) -> Dict:
     features["RHD280"] = str(features["RHD280"])
     return {col: features.get(col) for col in COLUMN_ORDERS["menstrual"]}
 
+def map_infertility_features(input: Dict) -> Dict:
+    features = map_common_features(input)
+    return {col: features.get(col) for col in COLUMN_ORDERS["infertility"]}
+
 
 # --- Mapper registry ---
 FEATURE_MAPPERS = {
@@ -121,4 +125,5 @@ FEATURE_MAPPERS = {
     "hormone_shbg": map_shbg_features,
     "menopause": map_menopause_features,
     "menstrual": map_menstrual_features,
+    "infertility": map_infertility_features,
 }

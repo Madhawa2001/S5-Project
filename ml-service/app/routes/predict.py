@@ -37,6 +37,7 @@ MODELS = {
     },
     "menopause": JoblibModel(MODELS_DIR / "Menopause_Pipeline_Model.joblib"),
     "menstrual": JoblibModel(MODELS_DIR / "Menstrual_Pipeline_Model.joblib"),
+    "infertility": JoblibModel(MODELS_DIR / "infertility_xgboost_risk_only.joblib"),
 }
 
 def build_feature_df(features: Dict, model_key: str) -> pd.DataFrame:
