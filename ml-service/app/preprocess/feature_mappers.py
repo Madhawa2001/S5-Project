@@ -16,11 +16,11 @@ COLUMN_ORDERS = {
         'RIDAGEMN', 'LBDBMNSI', 'RHQ131', 'RIAGENDR',
         'RIDEXPRG', 'BMXBMI'
     ],
-    "menopause": [   'RIDAGEYR', 'RHQ166', 'LBXBPB', 'RHQ420',
-    'LBXBCD', 'RHQ074', 'RHQ160', 'LBXBMN',
+    "menopause": [   'RIDAGEYR', 'LBXBPB', 'RHQ420',
+    'LBXBCD', 'RHQ160', 'LBXBMN',
     'LBXTHG', 'LBXBSE'],
 
-    "menstrual": ['RIDAGEYR', 'RHD280', 'RHQ166', 'RHQ540',
+    "menstrual": ['RIDAGEYR', 'RHD280', 'RHQ540',
     'RHQ305', 'DMDMARTL', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN']
 }
 
@@ -77,10 +77,10 @@ def map_common_features(input: Dict) -> Dict:
         "LBXBMN": blood.get("manganese_umolL") / 18.20 if blood.get("manganese_umolL") else None,
         "DMDMARTL": marital_code,
         "RHD280": 1 if input.get("hadHysterectomy") else 2,        
-        "RHQ166": input.get("vaginalDeliveries"),
+        # "RHQ166": input.get("vaginalDeliveries"),
         "RHQ540": 1 if input.get("everUsedFemaleHormones") else 2,  
         "RHQ305": 1 if input.get("ovariesRemoved") else 2,  
-        "RHQ074": 1 if input.get("triedYearPregnant") else 2,  
+        # "RHQ074": 1 if input.get("triedYearPregnant") else 2,  
         "RHQ420": 1 if input.get("everUsedBirthControlPills") else 2,  
     }
 
@@ -101,7 +101,7 @@ def map_shbg_features(input: Dict) -> Dict:
 def map_menopause_features(input: Dict) -> Dict:
     features = map_common_features(input)
     # features["RHD280"] = str(features["RHD280"])
-    features["RHQ074"] = str(features["RHQ074"])
+    # features["RHQ074"] = str(features["RHQ074"])
     features["RHQ420"] = str(features["RHQ420"])
     return {col: features.get(col) for col in COLUMN_ORDERS["menopause"]}
 
