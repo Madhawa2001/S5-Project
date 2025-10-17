@@ -98,6 +98,7 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
 
     # --- Normal single-model case ---
     clf = MODELS[model]
+    print(input.features)
     X = build_feature_df(input.features, model)
     print(X)
     y_pred = clf.predict(X)
