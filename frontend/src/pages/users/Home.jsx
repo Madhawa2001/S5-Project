@@ -1,7 +1,7 @@
 "use client"
 
 import { useNavigate } from "react-router-dom"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { useEffect, useState } from "react"
 
 export default function Home() {
@@ -19,7 +19,7 @@ export default function Home() {
     }
 
     if (user?.role === "admin") {
-      navigate("/requests")
+      navigate("/admin/users")
       return
     }
 
@@ -84,7 +84,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-green-200">
+      {/* <div className="bg-white shadow-sm border-b border-green-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -107,7 +107,7 @@ export default function Home() {
               )}
               {(user?.role === "doctor" || user?.role === "nurse") && (
                 <button
-                  onClick={() => navigate("/patient-data")}
+                  onClick={() => navigate("/add-patient")}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
                 >
                   New Patient
@@ -122,7 +122,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
