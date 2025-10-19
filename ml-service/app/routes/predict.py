@@ -230,6 +230,15 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
 
     results = {}
 
+    def unwrap_model(obj):
+        """Recursively unwrap pipelines to get the actual model."""
+        from sklearn.pipeline import Pipeline
+        if isinstance(obj, Pipeline):
+            # Try to unwrap last step
+            last_step = list(obj.named_steps.values())[-1]
+            return unwrap_model(last_step)
+        return obj
+
     def compute_shap_for_model(clf, mapper_key: str, features: Dict):
         """Extract model + preprocessor, compute SHAP values, and return JSON."""
         try:
@@ -237,45 +246,66 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
             if "hormone" in mapper_key:
                 X = preprocess_domain_rules(X)
 
-            # Extract model and preprocessor
-            pipeline = clf.model  # JoblibModel wraps it
+            pipeline = clf.model
+
+            # --- Find preprocessor and model ---
+            preprocessor = None
             try:
-                preprocessor = pipeline.named_steps["preprocessor_and_model"].named_steps["preprocessor"]
-                xgb_model = pipeline.named_steps["preprocessor_and_model"].named_steps["model"]
+                preprocessor = pipeline.named_steps["preprocessor_and_model"].named_steps.get("preprocessor", None)
+                model_obj = pipeline.named_steps["preprocessor_and_model"].named_steps["model"]
             except Exception:
-                # fallback if pipeline structured differently
-                preprocessor = pipeline.named_steps.get("preprocessor") or pipeline
-                xgb_model = pipeline.named_steps.get("model") or pipeline
+                preprocessor = pipeline.named_steps.get("preprocessor", None)
+                model_obj = pipeline.named_steps.get("model", pipeline)
 
-            X_transformed = preprocessor.transform(X)
-            feature_names = preprocessor.get_feature_names_out()
+            # --- Unwrap final estimator if still a pipeline ---
+            model_obj = unwrap_model(model_obj)
 
-            explainer = shap.TreeExplainer(xgb_model)
-            shap_values = explainer.shap_values(X_transformed)
-            expected_value = explainer.expected_value
+            # --- Transform features ---
+            X_transformed = preprocessor.transform(X) if preprocessor else X
+            feature_names = (
+                preprocessor.get_feature_names_out()
+                if preprocessor and hasattr(preprocessor, "get_feature_names_out")
+                else X.columns
+            )
 
-            # convert SHAP summary for a single instance
+            # --- Pick the right SHAP explainer ---
+            if "xgboost" in str(type(model_obj)).lower() or "xgb" in str(type(model_obj)).lower():
+                explainer = shap.TreeExplainer(model_obj)
+                shap_values = explainer.shap_values(X_transformed)
+                expected_value = explainer.expected_value
+            else:
+                # Fallback for sklearn models
+                bg = X_transformed[:30] if len(X_transformed) > 30 else X_transformed
+                explainer = shap.KernelExplainer(model_obj.predict, bg)
+                shap_values = explainer.shap_values(X_transformed[:1])
+                expected_value = float(np.mean(model_obj.predict(bg)))
+
             shap_vals_row = shap_values[0] if hasattr(shap_values, "__len__") else shap_values
-            features_used = feature_names.tolist()
-            values_used = shap_vals_row.tolist()
+            features_used = list(feature_names)
+            values_used = np.array(shap_vals_row).flatten().tolist()
 
-            # Optional: generate SHAP bar plot
-            shap_plot = None
-            try:
-                import matplotlib.pyplot as plt
-                shap.summary_plot(shap_values, X_transformed, feature_names=feature_names, show=False)
-                buf = io.BytesIO()
-                plt.savefig(buf, format="png", bbox_inches="tight")
-                plt.close()
-                shap_plot = base64.b64encode(buf.getvalue()).decode("utf-8")
-            except Exception as e:
-                print(f"⚠️ SHAP plot generation failed for {mapper_key}: {e}")
+            # --- Optional SHAP bar plot ---
+            # shap_plot = None
+            # try:
+            #     import matplotlib.pyplot as plt
+            #     shap.summary_plot(
+            #         shap_values,
+            #         X_transformed,
+            #         feature_names=feature_names,
+            #         show=False
+            #     )
+            #     buf = io.BytesIO()
+            #     plt.savefig(buf, format="png", bbox_inches="tight")
+            #     plt.close()
+            #     shap_plot = base64.b64encode(buf.getvalue()).decode("utf-8")
+            # except Exception as e:
+            #     print(f"⚠️ SHAP plot generation failed for {mapper_key}: {e}")
 
             return {
-                "expected_value": float(expected_value) if np.isscalar(expected_value) else expected_value[0],
+                "expected_value": float(expected_value),
                 "features": features_used,
                 "values": values_used,
-                "plot": shap_plot,
+                # "plot": shap_plot,
             }
 
         except Exception as e:
@@ -287,12 +317,15 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
         for sm, clf in MODELS[model].items():
             mapper_key = f"{model}_{sm}"
             results[mapper_key] = compute_shap_for_model(clf, mapper_key, input.features)
+
     # --- Single-model case ---
     else:
         clf = MODELS[model]
         results[model] = compute_shap_for_model(clf, model, input.features)
 
     return {"model": model, "shap": results}
+
+
 
 
 
