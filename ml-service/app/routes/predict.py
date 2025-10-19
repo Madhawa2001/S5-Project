@@ -11,6 +11,9 @@ from app.core.db import db
 from app.preprocess.feature_mappers import FEATURE_MAPPERS, COLUMN_ORDERS
 from app.preprocess.hormone_preprocessor import preprocess_domain_rules
 
+import shap, io, base64
+# import matplotlib.pyplot as plt
+
 router = APIRouter()
 
 class PredictInput(BaseModel):
@@ -98,7 +101,7 @@ async def predict(model: str, input: PredictInput, user=Depends(verify_jwt)):
 
     # --- Normal single-model case ---
     clf = MODELS[model]
-    print(input.features)
+    # print(input.features)
     X = build_feature_df(input.features, model)
     print(X)
     y_pred = clf.predict(X)
@@ -215,3 +218,81 @@ async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_j
 
     # print({"model": model, "sensitivity": results})
     return {"model": model, "sensitivity": results}
+
+@router.post("/shap/{model}")
+async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt)):
+    """Compute SHAP feature contribution analysis for any model."""
+    if "doctor" not in user.get("roles", []) and "nurse" not in user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if model not in MODELS:
+        raise HTTPException(status_code=404, detail=f"Unknown model: {model}")
+
+    results = {}
+
+    def compute_shap_for_model(clf, mapper_key: str, features: Dict):
+        """Extract model + preprocessor, compute SHAP values, and return JSON."""
+        try:
+            X = build_feature_df(features, mapper_key)
+            if "hormone" in mapper_key:
+                X = preprocess_domain_rules(X)
+
+            # Extract model and preprocessor
+            pipeline = clf.model  # JoblibModel wraps it
+            try:
+                preprocessor = pipeline.named_steps["preprocessor_and_model"].named_steps["preprocessor"]
+                xgb_model = pipeline.named_steps["preprocessor_and_model"].named_steps["model"]
+            except Exception:
+                # fallback if pipeline structured differently
+                preprocessor = pipeline.named_steps.get("preprocessor") or pipeline
+                xgb_model = pipeline.named_steps.get("model") or pipeline
+
+            X_transformed = preprocessor.transform(X)
+            feature_names = preprocessor.get_feature_names_out()
+
+            explainer = shap.TreeExplainer(xgb_model)
+            shap_values = explainer.shap_values(X_transformed)
+            expected_value = explainer.expected_value
+
+            # convert SHAP summary for a single instance
+            shap_vals_row = shap_values[0] if hasattr(shap_values, "__len__") else shap_values
+            features_used = feature_names.tolist()
+            values_used = shap_vals_row.tolist()
+
+            # Optional: generate SHAP bar plot
+            shap_plot = None
+            try:
+                import matplotlib.pyplot as plt
+                shap.summary_plot(shap_values, X_transformed, feature_names=feature_names, show=False)
+                buf = io.BytesIO()
+                plt.savefig(buf, format="png", bbox_inches="tight")
+                plt.close()
+                shap_plot = base64.b64encode(buf.getvalue()).decode("utf-8")
+            except Exception as e:
+                print(f"⚠️ SHAP plot generation failed for {mapper_key}: {e}")
+
+            return {
+                "expected_value": float(expected_value) if np.isscalar(expected_value) else expected_value[0],
+                "features": features_used,
+                "values": values_used,
+                "plot": shap_plot,
+            }
+
+        except Exception as e:
+            print(f"❌ SHAP computation failed for {mapper_key}: {e}")
+            return {"error": str(e)}
+
+    # --- Multi-model case (like hormone) ---
+    if isinstance(MODELS[model], dict):
+        for sm, clf in MODELS[model].items():
+            mapper_key = f"{model}_{sm}"
+            results[mapper_key] = compute_shap_for_model(clf, mapper_key, input.features)
+    # --- Single-model case ---
+    else:
+        clf = MODELS[model]
+        results[model] = compute_shap_for_model(clf, model, input.features)
+
+    return {"model": model, "shap": results}
+
+
+

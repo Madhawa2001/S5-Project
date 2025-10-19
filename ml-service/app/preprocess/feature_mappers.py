@@ -21,7 +21,14 @@ COLUMN_ORDERS = {
     'LBXTHG', 'LBXBSE'],
 
     "menstrual": ['RIDAGEYR', 'RHD280', 'RHQ540',
-    'RHQ305', 'DMDMARTL', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN']
+    'RHQ305', 'DMDMARTL', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN'],
+
+    "menstrual": ['RIDAGEYR', 'RHD280', 'RHQ540',
+    'RHQ305', 'DMDMARTL', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN'],
+    "infertility": [
+        'RIDAGEYR', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN'
+    ],
+
 }
 
 MARITAL_STATUS_MAP = {
