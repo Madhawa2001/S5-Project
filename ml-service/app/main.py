@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.concurrency import asynccontextmanager
-from app.routes.predict import router as predict_router
-from app.core.db import init_db, close_db
+from routes.predict import router as predict_router
+from core.db import init_db, close_db
 from dotenv import load_dotenv
 import os
 
