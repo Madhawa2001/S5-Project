@@ -36,25 +36,59 @@ model UserRole {
 }
 
 model Patient {
-  id              String        @id @default(cuid())
-  name            String
-  dob             DateTime
-  ageYears        Int?
-  ageMonths       Int?
-  gender          String
-  heightCm        Float?        
-  weightKg        Float?        
-  bmi             Float?        
-  pregnancyCount  Int?
-  pregnancyStatus Boolean?
-  diagnosis       String?
+  id               String        @id @default(cuid())
+  name             String
+  nic              String?       @unique   // National ID Number
+  dob              DateTime
+  ageYears         Int?
+  ageMonths        Int?
+  gender           String
+
+  heightCm         Float?
+  weightKg         Float?
+  bmi              Float?
+
+  // 🩺 Reproductive & Hormone History
+  pregnancyCount           Int?
+  pregnancyStatus          Boolean?
+  triedYearPregnant        Boolean?     // Tried for a year to become pregnant
+  vaginalDeliveries        Int?         // How many vaginal deliveries
+  everUsedFemaleHormones   Boolean?
+  hadHysterectomy          Boolean?
+  ovariesRemoved           Boolean?
+  everUsedBirthControlPills Boolean?
+
+  // 💍 Demographics
+  maritalStatus   MaritalStatus?  // Enum below
+
+  // 📞 Contact details
+  contactNumber   String?
+  email           String?
+  address         String?
+
+  // 👨‍⚕️ Doctor Relationship
   doctorId        String?
   doctor          User?          @relation(fields: [doctorId], references: [id])
+
+  // 🔬 Related data
   bloodMetals     BloodMetals[]
   predictions     Prediction[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+
+  // 📅 Metadata
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
+
+enum MaritalStatus {
+  MARRIED
+  WIDOWED
+  DIVORCED
+  SEPARATED
+  NEVER_MARRIED
+  LIVING_WITH_PARTNER
+  UNKNOWN
+}
+
 model BloodMetals {
   id              String   @id @default(cuid())
   patientId       String
@@ -81,7 +115,6 @@ model Prediction {
   createdAt  DateTime @default(now())
 }
 
-
 model AccessLog {
   id          String   @id @default(cuid())
   userId      String?  // nullable if unauthenticated action
@@ -91,3 +124,4 @@ model AccessLog {
   userAgent   String?
   createdAt   DateTime @default(now())
 }
+
