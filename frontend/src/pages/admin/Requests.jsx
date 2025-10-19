@@ -1,7 +1,7 @@
 "use client"
 
 import { useNavigate } from "react-router-dom"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { useEffect, useState } from "react"
 
 export default function Requests() {
@@ -132,21 +132,21 @@ export default function Requests() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-green-200">
+      {/* <div className="bg-white shadow-sm border-b border-green-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-green-800">Registration Requests</h1>
               <p className="text-sm text-green-600">Review and approve user registration requests</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3"> */}
               {/* <button
                 onClick={() => navigate("/home")}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
               >
                 Back to Dashboard
               </button> */}
-              <button
+              {/* <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium"
               >
@@ -155,7 +155,7 @@ export default function Requests() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
