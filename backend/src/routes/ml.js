@@ -105,4 +105,52 @@ router.post(
   }
 );
 
+router.post(
+  "/:model/shap/:method",
+  verifyToken,
+  requireRole("doctor"),
+  audit("SHAP_ANALYSIS"),
+  async (req, res) => {
+    try {
+      const { model, method } = req.params;
+      let payload = req.body;
+
+      // 1️⃣ Fetch patient data from DB if method=db
+      if (method === "db") {
+        const { patientId } = req.body;
+        if (!patientId) {
+          return res.status(400).json({ error: "patientId required" });
+        }
+
+        const patient = await prisma.patient.findUnique({
+          where: { id: patientId },
+          include: { bloodMetals: { orderBy: { createdAt: "desc" } } },
+        });
+
+        if (!patient) {
+          return res.status(404).json({ error: "Patient not found" });
+        }
+
+        payload = { features: patient };
+      }
+
+      // 2️⃣ Forward to FastAPI SHAP route
+      const response = await axios.post(
+        `${process.env.ML_SERVICE_URL}/predict/shap/${model}`,
+        payload,
+        { headers: { Authorization: req.headers.authorization } }
+      );
+
+      // 3️⃣ Return response from FastAPI
+      res.json(response.data);
+    } catch (err) {
+      console.error("SHAP service error:", err.message);
+      res.status(500).json({
+        error: "SHAP service error",
+        details: err.response?.data || err.message,
+      });
+    }
+  }
+);
+
 export default router;
