@@ -17,6 +17,7 @@ import reportRoutes from "./routes/reports.js";
 const app = express();
 //dotenv.config();
 
+app.set("trust proxy", 1);
 app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
