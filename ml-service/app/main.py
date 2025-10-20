@@ -4,22 +4,22 @@ from routes.predict import router as predict_router
 from core.db import init_db, close_db
 from dotenv import load_dotenv
 import os
+import subprocess
 
 # Load env variables
 load_dotenv()
 
-async def ensure_prisma_binary():
-    """Ensure Prisma query engine binary exists in Railway runtime."""
-    print("Checking Prisma binary...")
-    result = os.system("prisma py fetch --binary-target debian-openssl-3.0.x")
-    if result == 0:
-        print("✅ Prisma binary fetched successfully.")
-    else:
-        print("⚠️ Failed to fetch Prisma binary, check logs.")
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await ensure_prisma_binary()
+    # Ensure Prisma binary exists before DB init
+    try:
+        print("🔍 Checking Prisma binary...")
+        subprocess.run(["prisma", "py", "fetch"], check=True)
+        print("✅ Prisma binary ready.")
+    except Exception as e:
+        print("⚠️ Prisma fetch failed:", e)
+
+    # Connect DB
     await init_db()
     try:
         yield
