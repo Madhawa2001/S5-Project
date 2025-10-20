@@ -4,22 +4,12 @@ from routes.predict import router as predict_router
 from core.db import init_db, close_db
 from dotenv import load_dotenv
 import os
-import subprocess
 
 # Load env variables
 load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure Prisma binary exists before DB init
-    try:
-        print("🔍 Checking Prisma binary...")
-        subprocess.run(["prisma", "py", "fetch"], check=True)
-        print("✅ Prisma binary ready.")
-    except Exception as e:
-        print("⚠️ Prisma fetch failed:", e)
-
-    # Connect DB
     await init_db()
     try:
         yield
