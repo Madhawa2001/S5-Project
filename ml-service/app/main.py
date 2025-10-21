@@ -8,7 +8,6 @@ import os
 # Load env variables
 load_dotenv()
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
