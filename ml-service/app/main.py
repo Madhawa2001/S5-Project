@@ -20,6 +20,7 @@ app = FastAPI(title="ML Prediction Service",lifespan=lifespan)
 
 # Register routes
 app.include_router(predict_router, prefix="/predict", tags=["Prediction"])
+app.get("/health", tags=["Health"])(lambda: {"status": "ok"})
 
 if __name__ == "__main__":
     import uvicorn
