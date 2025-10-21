@@ -1,6 +1,7 @@
 from typing import Dict
 import numpy as np
 import pandas as pd
+from app.preprocess.infertility_preprocessor import preprocess_infertility_for_model
 
 # --- Column orders (per model) ---
 COLUMN_ORDERS = {
@@ -29,11 +30,9 @@ COLUMN_ORDERS = {
     'RHQ305', 'DMDMARTL', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN'],
 
     "infertility": [
-        'Blood metal weights','lead_ugdl','cadmium_ugl','mercury_ugl','selenium_ugl',
-        'manganese_ugl','regular_periods','last_period_age','pelvic_infection','hysterectomy',
-        'birth_control','female_hormones','age_years','race','country_birth','marital_status'
-    ],
-
+         'WTSH2YR', 'LBXBPB', 'LBDBPBSI', 'LBXBCD', 'LBDBCDSI', 'LBXTHG', 'LBDTHGSI', 'LBXBSE', 'LBDBSESI', 'LBXBMN', 'LBDBMNSI',
+         'RHQ031', 'RHQ060', 'RHQ078', 'RHD280', 'RHQ420', 'RHQ540', 'RIDAGEYR', 'RIDRETH3', 'DMDBORN4', 'DMDMARTL' ]
+    ,
 }
 
 MARITAL_STATUS_MAP = {
@@ -77,7 +76,7 @@ def map_common_features(input: Dict) -> Dict:
         "LBDBMNSI": blood.get("manganese_umolL"),          # Manganese
         "BMXBMI": input.get("bmi"),                                    # TODO: compute if you have weight+height
         # Extra placeholders for other models
-        "RHQ031": None,
+        "RHQ031": input.get("vaginalDeliveries"),
         "RHQ160": int(input.get("pregnancyCount", 0) or 0),
         "RHQ200": None,
         "is_menopausal": None,
@@ -89,13 +88,15 @@ def map_common_features(input: Dict) -> Dict:
         "LBXBMN": blood.get("manganese_umolL") / 18.20 if blood.get("manganese_umolL") else None,
         "DMDMARTL": marital_code,
         "RHD280": 1 if input.get("hadHysterectomy") else 2,        
-        # "RHQ166": input.get("vaginalDeliveries"),
+        #"RHQ166": input.get("vaginalDeliveries"),
         "RHQ540": 1 if input.get("everUsedFemaleHormones") else 2,  
         "RHQ305": 1 if input.get("ovariesRemoved") else 2,  
-        # "RHQ074": 1 if input.get("triedYearPregnant") else 2,  
+        "RHQ060": 1 if input.get("triedYearPregnant") else 2,  
         "RHQ420": 1 if input.get("everUsedBirthControlPills") else 2,
-        "race": None,                 
-        "country_birth": None,
+        "RIDRETH3": None,                 
+        "DMDBORN4": None,
+        "WTSH2YR": None,
+        "RHQ078": None,
     }
 
 # --- Model-specific mappers ---
@@ -171,59 +172,13 @@ def map_menstrual_features(input: Dict) -> Dict:
 
 def map_infertility_features(input: Dict) -> Dict:
     features = map_common_features(input)
-
-    # Convert raw metals from µmol/L to µg/L (example conversion)
-    blood = input.get("bloodMetals", [{}])[0]
-    lead_ugdl = blood.get("lead_umolL", 0) * 20.7
-    cadmium_ugl = blood.get("cadmium_umolL", 0) * 112.4
-    mercury_ugl = blood.get("mercury_umolL", 0) * 200.6
-    selenium_ugl = blood.get("selenium_umolL", 0) * 78.96
-    manganese_ugl = blood.get("manganese_umolL", 0) * 54.94
-
-    # --- Compute risk categories (example thresholds) ---
-    def risk(val, low, high):
-        if val < low:
-            return 0
-        elif val > high:
-            return 2
-        return 1
-
-    features["lead_risk"] = risk(lead_ugdl, 1.0, 5.0)
-    features["cadmium_risk"] = risk(cadmium_ugl, 0.1, 1.0)
-    features["mercury_risk"] = risk(mercury_ugl, 0.5, 5.0)
-    features["selenium_risk"] = risk(selenium_ugl, 50, 120)
-    features["manganese_risk"] = risk(manganese_ugl, 2.0, 15.0)
-
-    # --- Derived toxic metrics ---
-    features["toxic_risk_score"] = np.mean([
-        features["lead_risk"],
-        features["cadmium_risk"],
-        features["mercury_risk"]
-    ])
-    features["multi_high_risk"] = int(sum(v == 2 for v in [
-        features["lead_risk"], features["cadmium_risk"],
-        features["mercury_risk"], features["manganese_risk"]
-    ]) >= 2)
-    features["risk_imbalance"] = abs(features["selenium_risk"] - features["toxic_risk_score"])
-    features["high_lead_cadmium"] = int(features["lead_risk"] == 2 and features["cadmium_risk"] == 2)
-    features["low_selenium_high_toxics"] = int(features["selenium_risk"] == 0 and features["toxic_risk_score"] > 1)
-
-    # --- Demographics and reproductive ---
-    features["regular_periods"] = features.get("RHQ305")
-    features["last_period_age"] = features.get("RHQ160")
-    features["pelvic_infection"] = features.get("RHQ200")
-    features["hysterectomy"] = features.get("RHD280")
-    features["birth_control"] = features.get("RHQ420")
-    features["female_hormones"] = features.get("RHQ540")
-    features["age_years"] = features.get("RIDAGEYR")
-    features["race"] = features.get("race")
-    features["country_birth"] = features.get("country_birth")
-    features["marital_status"] = features.get("DMDMARTL")
-
-    
-
     # --- Final order as model expects ---
-    return {col: features.get(col) for col in COLUMN_ORDERS["infertility"]}
+    tempdf = {col: features.get(col) for col in COLUMN_ORDERS["infertility"]}
+    tempdf = preprocess_infertility_for_model(tempdf)
+    print("="*40)
+    print("Temp DF before preprocessing:", tempdf.columns)
+    print("="*40)
+    return tempdf
 
 # --- Mapper registry ---
 FEATURE_MAPPERS = {
