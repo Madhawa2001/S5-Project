@@ -46,7 +46,7 @@ MODELS = {
     },
     "menopause": JoblibModel(MODELS_DIR / "Menopause_Pipeline_Model.joblib"),
     "menstrual": JoblibModel(MODELS_DIR / "Menstrual_Pipeline_Model.joblib"),
-    "infertility": JoblibModel(MODELS_DIR / "infertility_xgboost_risk_only.joblib"),
+    "infertility": JoblibModel(MODELS_DIR / "best_model_risk_only.joblib"),
 }
 
 def build_feature_df(features: Dict, model_key: str) -> pd.DataFrame:
@@ -54,7 +54,10 @@ def build_feature_df(features: Dict, model_key: str) -> pd.DataFrame:
     if not mapper:
         raise ValueError(f"No feature mapper for {model_key}")
     mapped = mapper(features)
-    return pd.DataFrame([mapped])
+    if model_key == "infertility":
+        return mapped
+    else:
+        return pd.DataFrame([mapped])
 
 def feature_sensitivity(model, X_row: pd.Series, feature: str, num_points: int = 1000):
     """Return x (feature values) and y (predictions) without plotting."""

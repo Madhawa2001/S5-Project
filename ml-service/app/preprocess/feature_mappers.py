@@ -1,4 +1,7 @@
 from typing import Dict
+import numpy as np
+import pandas as pd
+from preprocess.infertility_preprocessor import preprocess_infertility_for_model
 
 # --- Column orders (per model) ---
 COLUMN_ORDERS = {
@@ -25,9 +28,11 @@ COLUMN_ORDERS = {
 
     "menstrual": ['RIDAGEYR', 'RHD280', 'RHQ540',
     'RHQ305', 'DMDMARTL', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN'],
+
     "infertility": [
-        'RIDAGEYR', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN'
-    ],
+         'WTSH2YR', 'LBXBPB', 'LBDBPBSI', 'LBXBCD', 'LBDBCDSI', 'LBXTHG', 'LBDTHGSI', 'LBXBSE', 'LBDBSESI', 'LBXBMN', 'LBDBMNSI',
+         'RHQ031', 'RHQ060', 'RHQ078', 'RHD280', 'RHQ420', 'RHQ540', 'RIDAGEYR', 'RIDRETH3', 'DMDBORN4', 'DMDMARTL' ]
+    ,
 
 }
 
@@ -72,7 +77,7 @@ def map_common_features(input: Dict) -> Dict:
         "LBDBMNSI": blood.get("manganese_umolL"),          # Manganese
         "BMXBMI": input.get("bmi"),                                    # TODO: compute if you have weight+height
         # Extra placeholders for other models
-        "RHQ031": None,
+        "RHQ031": input.get("vaginalDeliveries"),
         "RHQ160": int(input.get("pregnancyCount", 0) or 0),
         "RHQ200": None,
         "is_menopausal": None,
@@ -84,11 +89,15 @@ def map_common_features(input: Dict) -> Dict:
         "LBXBMN": blood.get("manganese_umolL") / 18.20 if blood.get("manganese_umolL") else None,
         "DMDMARTL": marital_code,
         "RHD280": 1 if input.get("hadHysterectomy") else 2,        
-        # "RHQ166": input.get("vaginalDeliveries"),
+        #"RHQ166": input.get("vaginalDeliveries"),
         "RHQ540": 1 if input.get("everUsedFemaleHormones") else 2,  
         "RHQ305": 1 if input.get("ovariesRemoved") else 2,  
-        # "RHQ074": 1 if input.get("triedYearPregnant") else 2,  
-        "RHQ420": 1 if input.get("everUsedBirthControlPills") else 2,  
+        "RHQ060": 1 if input.get("triedYearPregnant") else 2,  
+        "RHQ420": 1 if input.get("everUsedBirthControlPills") else 2,
+        "RIDRETH3": None,                 
+        "DMDBORN4": None,
+        "WTSH2YR": None,
+        "RHQ078": None,
     }
 
 # --- Model-specific mappers ---
@@ -122,8 +131,13 @@ def map_menstrual_features(input: Dict) -> Dict:
 
 def map_infertility_features(input: Dict) -> Dict:
     features = map_common_features(input)
-    return {col: features.get(col) for col in COLUMN_ORDERS["infertility"]}
-
+    # --- Final order as model expects ---
+    tempdf = {col: features.get(col) for col in COLUMN_ORDERS["infertility"]}
+    tempdf = preprocess_infertility_for_model(tempdf)
+    print("="*40)
+    print("Temp DF before preprocessing:", tempdf.columns)
+    print("="*40)
+    return tempdf
 
 # --- Mapper registry ---
 FEATURE_MAPPERS = {
