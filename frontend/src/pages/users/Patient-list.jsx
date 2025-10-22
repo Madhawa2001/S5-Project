@@ -13,6 +13,7 @@ export default function PatientList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const VITE_API_URL = import.meta.env.VITE_API_URL;
 
   // Redirect if not logged in
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function PatientList() {
   const fetchPatients = async () => {
     try {
       setLoading(true)
-      const response = await authenticatedFetch("http://localhost:5000/patients")
+      const response = await authenticatedFetch(`${VITE_API_URL}/patients`)
       if (!response.ok) throw new Error("Failed to fetch patients")
       const data = await response.json()
       setPatients(data || [])
@@ -69,11 +70,6 @@ export default function PatientList() {
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
-  }
-
-  const handleLogout = () => {
-    logout()
-    navigate("/")
   }
 
   if (loading) return <div className="text-center py-12">Loading...</div>

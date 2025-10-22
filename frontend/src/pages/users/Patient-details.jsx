@@ -21,6 +21,7 @@ export default function PatientDetails() {
     selenium_umolL: "",
     manganese_umolL: "",
   })
+  const VITE_API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     fetchPatientDetails()
@@ -29,7 +30,7 @@ export default function PatientDetails() {
   const fetchPatientDetails = async () => {
     try {
       setLoading(true)
-      const res = await authenticatedFetch(`http://localhost:5000/patients/${id}`)
+      const res = await authenticatedFetch(`${VITE_API_URL}/patients/${id}`)
       if (!res.ok) throw new Error("Failed to fetch patient details")
       const data = await res.json()
       setPatient(data)
@@ -59,7 +60,7 @@ export default function PatientDetails() {
         if (isNaN(payload[key])) payload[key] = null
       })
 
-      const res = await authenticatedFetch(`http://localhost:5000/bloodmetals/${id}`, {
+      const res = await authenticatedFetch(`${VITE_API_URL}/bloodmetals/${id}`, {
         method: "POST",
         body: JSON.stringify(payload),
       })
@@ -82,7 +83,7 @@ export default function PatientDetails() {
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this patient?")) return
     try {
-      const res = await authenticatedFetch(`http://localhost:5000/patients/${id}`, {
+      const res = await authenticatedFetch(`${VITE_API_URL}/patients/${id}`, {
         method: "DELETE",
       })
       if (!res.ok) throw new Error("Failed to delete patient")

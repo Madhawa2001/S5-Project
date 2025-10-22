@@ -37,6 +37,7 @@ export default function Predictions() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [fetchingPatient, setFetchingPatient] = useState(true)
+  const VITE_API_URL = import.meta.env.VITE_API_URL
 
   const availableModels = [
     { id: "hormone", label: "Hormone Model" },
@@ -53,7 +54,7 @@ export default function Predictions() {
   const fetchPatientData = async () => {
     try {
       setFetchingPatient(true)
-      const res = await authenticatedFetch(`http://localhost:5000/patients/${id}`)
+      const res = await authenticatedFetch(` ${VITE_API_URL}/patients/${id}`)
       if (!res.ok) throw new Error("Failed to fetch patient data")
       const data = await res.json()
       setPatient(data)
@@ -68,7 +69,7 @@ export default function Predictions() {
   const fetchAllPatients = async () => {
     try {
       setFetchingPatient(true)
-      const res = await authenticatedFetch("http://localhost:5000/patients")
+      const res = await authenticatedFetch(`${VITE_API_URL}/patients`)
       if (!res.ok) throw new Error("Failed to fetch patients list")
       const data = await res.json()
       setPatients(data)
@@ -89,12 +90,23 @@ export default function Predictions() {
       setLoading(true)
       setError("")
       setPredictionResult(null)
-      const res = await authenticatedFetch(`http://localhost:5000/ml/${selectedModel}/db`, {
+      const res = await authenticatedFetch(`${VITE_API_URL}/ml/${selectedModel}/db`, {
         method: "POST",
         body: JSON.stringify({ patientId: patient.id }),
       })
       if (!res.ok) throw new Error(`Failed to get prediction for ${selectedModel}`)
       const data = await res.json()
+
+      // Convert 1/0 outputs for certain models into human-readable labels
+      if (data && data.prediction != null) {
+        const pNum = Number(data.prediction)
+        if (selectedModel === "infertility") {
+          data.prediction = pNum === 1 ? "Infertility" : "No infertility"
+        } else if (selectedModel === "menstrual") {
+          data.prediction = pNum === 1 ? "Irregular menstrual cycle" : "Regular menstrual cycle"
+        }
+      }
+
       setPredictionResult(data)
     } catch (err) {
       console.error(err)
@@ -113,7 +125,7 @@ export default function Predictions() {
       setLoading(true)
       setError("")
       setSensitivityResult(null)
-      const res = await authenticatedFetch(`http://localhost:5000/ml/${selectedModel}/sensitivity/db`, {
+      const res = await authenticatedFetch(`${VITE_API_URL}/ml/${selectedModel}/sensitivity/db`, {
         method: "POST",
         body: JSON.stringify({ patientId: patient.id }),
       })
@@ -131,7 +143,7 @@ export default function Predictions() {
   const downloadReport = async () => {
     if (!patient) return
     try {
-      const res = await authenticatedFetch(`http://localhost:5000/reports/${patient.id}`)
+      const res = await authenticatedFetch(`${VITE_API_URL}/reports/${patient.id}`)
       if (!res.ok) throw new Error("Failed to download report")
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
@@ -189,8 +201,8 @@ export default function Predictions() {
   const ChartCard = ({ title, data, seriesKeys, original_x, original_y }) => {
     const yDomain = computeYDomain(data, seriesKeys)
     return (
-      <div className="bg-white rounded-lg shadow p-4 border border-green-100">
-        <h3 className="text-sm font-medium text-green-700 mb-2">{title}</h3>
+      <div className="bg-white rounded-lg shadow p-4 border border-blue-100">
+        <h3 className="text-sm font-medium text-blue-700 mb-2">{title}</h3>
         <div style={{ width: "100%", height: 300 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
@@ -199,8 +211,8 @@ export default function Predictions() {
               <YAxis domain={yDomain} />
               <Tooltip formatter={v => typeof v === "number" ? [v.toFixed(4), "Value"] : [v, "Value"]} />
               <Legend />
-              {original_x != null && <ReferenceLine x={original_x} stroke="#10b981" strokeDasharray="3 3" label="original x" />}
-              {original_y != null && <ReferenceLine y={original_y} stroke="#059669" strokeDasharray="3 3" label="original y" />}
+              {original_x != null && <ReferenceLine x={original_x} stroke="#272ad8ff" strokeDasharray="3 3" label="original x" />}
+              {original_y != null && <ReferenceLine y={original_y} stroke="#272ad8ff" strokeDasharray="3 3" label="original y" />}
               {seriesKeys.map((key, idx) => (
                 <Line key={key} type="monotone" dataKey={key} stroke={PALETTE[idx % PALETTE.length]} strokeWidth={2} dot={false} name={key} />
               ))}
@@ -219,14 +231,14 @@ export default function Predictions() {
     <div className="max-w-6xl mx-auto space-y-6">
 
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-lg border border-green-200 p-8">
+      <div className="bg-white rounded-lg shadow-lg border border-blue-200 p-8">
         {id ? (
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-green-800">Predictions for {patient.name}</h1>
-            <button onClick={() => navigate(`/patient/${id}`)} className="text-green-600 hover:text-green-800">← Back</button>
+            <h1 className="text-2xl font-bold text-blue-800">Predictions for {patient.name}</h1>
+            <button onClick={() => navigate(`/patient/${id}`)} className="text-blue-600 hover:text-blue-800">← Back</button>
           </div>
         ) : (
-          <h1 className="text-2xl font-bold text-green-800 mb-6">Patient Predictions</h1>
+          <h1 className="text-2xl font-bold text-blue-800 mb-6">Patient Predictions</h1>
         )}
 
         {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
@@ -269,31 +281,31 @@ export default function Predictions() {
 
       {/* Prediction Results */}
       {predictionResult && (
-        <div className="bg-white rounded-lg shadow-lg border border-green-200 p-8">
-          <h2 className="text-xl font-semibold text-green-800 mb-4">Prediction Results</h2>
+        <div className="bg-white rounded-lg shadow-lg border border-blue-200 p-8">
+          <h2 className="text-xl font-semibold text-blue-800 mb-4">Prediction Results</h2>
           <div className="space-y-3">
             {predictionResult.prediction !== undefined && (
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-md border border-green-200">
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-md border border-blue-200">
                 <span className="font-medium text-gray-700">Prediction:</span>
-                <span className="text-lg font-bold text-green-600">{predictionResult.prediction}</span>
+                <span className="text-lg font-bold text-blue-600">{predictionResult.prediction}</span>
               </div>
             )}
             {predictionResult.predictions && Object.entries(predictionResult.predictions).map(([k, v]) => (
-              <div key={k} className="flex items-center justify-between p-4 bg-green-50 rounded-md border border-green-200">
+              <div key={k} className="flex items-center justify-between p-4 bg-blue-50 rounded-md border border-blue-200">
                 <span className="font-medium text-gray-700">{k.replace(/_/g, " ").replace("hormone ", "")}:</span>
-                <span className="text-lg font-bold text-green-600">{v.toFixed(2)}</span>
+                <span className="text-lg font-bold text-blue-600">{v.toFixed(2)}</span>
               </div>
             ))}
             {predictionResult.confidence && (
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-md border border-green-200">
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-md border border-blue-200">
                 <span className="font-medium text-gray-700">Confidence:</span>
-                <span className="text-lg font-bold text-green-600">{(predictionResult.confidence * 100).toFixed(2)}%</span>
+                <span className="text-lg font-bold text-blue-600">{(predictionResult.confidence * 100).toFixed(2)}%</span>
               </div>
             )}
             {predictionResult.risk_level && (
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-md border border-green-200">
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-md border border-blue-200">
                 <span className="font-medium text-gray-700">Risk Level:</span>
-                <span className="text-lg font-bold text-green-600">{predictionResult.risk_level}</span>
+                <span className="text-lg font-bold text-blue-600">{predictionResult.risk_level}</span>
               </div>
             )}
           </div>
@@ -302,8 +314,8 @@ export default function Predictions() {
 
       {/* Sensitivity Analysis */}
       {sensitivityResult && (
-        <div className="bg-white rounded-lg shadow-lg border border-green-200 p-8">
-          <h2 className="text-xl font-semibold text-green-800 mb-4">Sensitivity Analysis</h2>
+        <div className="bg-white rounded-lg shadow-lg border border-blue-200 p-8">
+          <h2 className="text-xl font-semibold text-blue-800 mb-4">Sensitivity Analysis</h2>
           {!sensitivityResult.sensitivity && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
               <p className="font-medium text-yellow-800">Sensitivity Analysis Data Format Issue</p>
