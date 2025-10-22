@@ -51,7 +51,7 @@ export default function Login() {
         </div>
 
         {/* Role Selector */}
-        <div className="flex mb-6 rounded-md overflow-hidden border border-blue-200">
+        {/* <div className="flex mb-6 rounded-md overflow-hidden border border-blue-200">
           <button
             type="button"
             onClick={() => setRole("doctor")}
@@ -74,7 +74,7 @@ export default function Login() {
           >
             Admin
           </button>
-        </div>
+        </div> */}
 
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-6">
@@ -158,7 +158,7 @@ export default function Login() {
         </button>
 
         {/* Register & Forgot password */}
-        {(role === "doctor" || role === "nurse") && (
+        {/* {(role === "doctor" || role === "nurse") && ( */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don’t have an account?{" "}
@@ -167,7 +167,7 @@ export default function Login() {
               </Link>
             </p>
           </div>
-        )}
+        {/* )} */}
 
         <div className="text-center mt-4">
           <a

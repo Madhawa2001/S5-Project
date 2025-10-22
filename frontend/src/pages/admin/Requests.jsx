@@ -19,7 +19,7 @@ export default function Requests() {
       return
     }
     if (user?.role !== "admin") {
-      navigate("/home")
+      navigate("/admin/dashboard")
       return
     }
     fetchRequests()
@@ -37,6 +37,7 @@ export default function Requests() {
           email: r.email,
           role: r.roles && r.roles.length > 0 ? r.roles[0] : "",
           requestDate: new Date(r.createdAt).toLocaleDateString(),
+          selectedRole: r.roles && r.roles.length > 0 ? r.roles[0] : "", // ✅ initialize selectedRole properly
         }))
         setRequests(formatted)
       } else {
@@ -50,20 +51,47 @@ export default function Requests() {
     }
   }
 
+  const handleRoleChange = (id, value) => {
+    setRequests(prev =>
+      prev.map(r =>
+        r.id === id ? { ...r, selectedRole: value } : r
+      )
+    )
+  }
+
   const handleRequest = async (id, action, role) => {
     try {
       setProcessingId(id)
+
+      // 👇 use let so we can reassign
+      let selectedRole = role
+
+      if (!selectedRole) {
+        const reqItem = requests.find(r => r.id === id)
+        selectedRole = reqItem?.selectedRole || ""
+      }
+
+      console.log("Handling request:", id, action, selectedRole)
+
       if (action === "approve") {
-        const approveResp = await authenticatedFetch(` ${VITE_API_URL}/admin/approve/${id}`, { method: "POST" })
+        // ✅ Approve the user
+        const approveResp = await authenticatedFetch(`${VITE_API_URL}/admin/approve/${id}`, {
+          method: "POST"
+        })
         if (!approveResp.ok) throw new Error("Failed to approve request")
 
-        const assignRoleResp = await authenticatedFetch(`${VITE_API_URL}/admin/assign-role`, {
-          method: "POST",
-          body: JSON.stringify({ userId: id, roleName: role }),
-        })
-        if (!assignRoleResp.ok) throw new Error("Failed to assign role")
+        // ✅ Assign role if selected
+        if (selectedRole) {
+          const assignRoleResp = await authenticatedFetch(`${VITE_API_URL}/admin/assign-role`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: id, roleName: selectedRole }),
+          })
+          if (!assignRoleResp.ok) throw new Error("Failed to assign role")
+        }
       }
-      // Remove processed request from list
+
+      // Remove processed request from the list
       setRequests(requests.filter((r) => r.id !== id))
     } catch (err) {
       console.error(err)
@@ -73,10 +101,6 @@ export default function Requests() {
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate("/")
-  }
 
   return (
     <div>
@@ -126,12 +150,26 @@ export default function Requests() {
                     <div className="text-sm text-blue-700">
                       <p><span className="font-medium">Email:</span> {req.email}</p>
                       <p><span className="font-medium">Request Date:</span> {req.requestDate}</p>
+                      {/* 🆕 Role Dropdown */}
+                      <div className="mt-2">
+                        <label className="text-sm text-blue-700 font-medium mr-2">Assign Role:</label>
+                        <select
+                          className="border rounded-md p-1 text-sm"
+                          value={req.selectedRole}
+                          onChange={(e) => handleRoleChange(req.id, e.target.value)}
+                        >
+                          <option value="">Select role</option>
+                          <option value="doctor">Doctor</option>
+                          <option value="nurse">Nurse</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleRequest(req.id, "approve", req.role)}
-                      disabled={processingId === req.id}
+                      disabled={processingId === req.id || (!req.role && !req.selectedRole)}
                       className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 transition-colors font-medium flex items-center gap-2"
                     >
                       {processingId === req.id ? "Processing..." : "Approve"}

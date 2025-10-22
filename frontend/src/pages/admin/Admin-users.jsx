@@ -11,7 +11,7 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const VITE_API_URL = import.meta.env.VITE_API_URL;
+  const VITE_API_URL = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -54,7 +54,7 @@ export default function AdminUsers() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/requests")}
+              onClick={() => navigate("/admin/requests")}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
             >
               Requests

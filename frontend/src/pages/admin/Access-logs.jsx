@@ -56,20 +56,6 @@ export default function AccessLogs() {
             <h1 className="text-2xl font-bold text-blue-800">Access Logs</h1>
             <p className="text-sm text-blue-600">System activity and user access history</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/admin/users")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-            >
-              Back to Users
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium"
-            >
-              Logout
-            </button>
-          </div>
         </div>
       </div>
 
