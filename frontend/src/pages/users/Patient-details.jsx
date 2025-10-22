@@ -1,5 +1,4 @@
-"use client"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
 import Layout from "../../components/Layout"
@@ -34,7 +33,6 @@ export default function PatientDetails() {
       if (!res.ok) throw new Error("Failed to fetch patient details")
       const data = await res.json()
       setPatient(data)
-
       if (data.bloodMetals && Array.isArray(data.bloodMetals)) {
         setBloodMetals(data.bloodMetals)
       }
@@ -50,24 +48,21 @@ export default function PatientDetails() {
     e.preventDefault()
     try {
       const payload = {
-        lead_umolL: bloodMetalForm.lead_umolL ? Number.parseFloat(bloodMetalForm.lead_umolL) : null,
-        mercury_umolL: bloodMetalForm.mercury_umolL ? Number.parseFloat(bloodMetalForm.mercury_umolL) : null,
-        cadmium_umolL: bloodMetalForm.cadmium_umolL ? Number.parseFloat(bloodMetalForm.cadmium_umolL) : null,
-        selenium_umolL: bloodMetalForm.selenium_umolL ? Number.parseFloat(bloodMetalForm.selenium_umolL) : null,
-        manganese_umolL: bloodMetalForm.manganese_umolL ? Number.parseFloat(bloodMetalForm.manganese_umolL) : null,
+        lead_umolL: bloodMetalForm.lead_umolL ? parseFloat(bloodMetalForm.lead_umolL) : null,
+        mercury_umolL: bloodMetalForm.mercury_umolL ? parseFloat(bloodMetalForm.mercury_umolL) : null,
+        cadmium_umolL: bloodMetalForm.cadmium_umolL ? parseFloat(bloodMetalForm.cadmium_umolL) : null,
+        selenium_umolL: bloodMetalForm.selenium_umolL ? parseFloat(bloodMetalForm.selenium_umolL) : null,
+        manganese_umolL: bloodMetalForm.manganese_umolL ? parseFloat(bloodMetalForm.manganese_umolL) : null,
       }
 
       Object.keys(payload).forEach((key) => {
-        if (isNaN(payload[key])) {
-          payload[key] = null
-        }
+        if (isNaN(payload[key])) payload[key] = null
       })
 
       const res = await authenticatedFetch(`http://localhost:5000/bloodmetals/${id}`, {
         method: "POST",
         body: JSON.stringify(payload),
       })
-
       if (!res.ok) throw new Error("Failed to add blood metals")
 
       setShowAddBloodMetals(false)
@@ -85,15 +80,14 @@ export default function PatientDetails() {
   }
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this patient?")) return
-
+    if (!window.confirm("Are you sure you want to delete this patient?")) return
     try {
       const res = await authenticatedFetch(`http://localhost:5000/patients/${id}`, {
         method: "DELETE",
       })
-
       if (!res.ok) throw new Error("Failed to delete patient")
-      navigate("/home")
+
+      navigate(user.role === "nurse" ? "/nurse/patients" : "/doctor/patients")
     } catch (err) {
       alert(err.message || "Failed to delete patient")
     }
@@ -101,25 +95,27 @@ export default function PatientDetails() {
 
   if (loading) {
     return (
-        <div className="flex justify-center items-center h-screen">
-          <div className="animate-spin h-12 w-12 border-b-2 border-green-600 rounded-full"></div>
-        </div>
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin h-12 w-12 border-b-2 border-blue-600 rounded-full"></div>
+      </div>
     )
   }
 
   if (error || !patient) {
     return (
       <Layout>
-        <div className="bg-red-50 text-red-600 p-4 rounded-md">{error || "Patient not found"}</div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-md">
+          {error || "Patient not found"}
+        </div>
       </Layout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
-      <div className="max-w-6xl mx-auto" style={{ color: "#000" }}>
+      <div className="max-w-6xl mx-auto py-6">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-black">Patient Details</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Patient Details</h1>
           <div className="flex gap-2">
             <Link
               to={`/predictions/${id}`}
@@ -131,7 +127,7 @@ export default function PatientDetails() {
             <Link
               to={`/edit-patient`}
               state={{ patient }}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <FiEdit />
               Edit
@@ -146,100 +142,103 @@ export default function PatientDetails() {
           </div>
         </div>
 
+        {/* Basic Info */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold text-black mb-4">Basic Information</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Basic Information</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-black">Name</p>
-              <p className="font-medium">{patient.name}</p>
+              <p className="font-medium text-black">{patient.name}</p>
             </div>
             <div>
               <p className="text-sm text-black">NIC</p>
-              <p className="font-medium">{patient.nic || "N/A"}</p>
+              <p className="font-medium text-black">{patient.nic || "N/A"}</p>
             </div>
             <div>
               <p className="text-sm text-black">Gender</p>
-              <p className="font-medium">{patient.gender}</p>
+              <p className="font-medium text-black">{patient.gender}</p>
             </div>
             <div>
               <p className="text-sm text-black">Age</p>
-              <p className="font-medium">
-                {patient.ageYears || 0} years {patient.ageMonths || 0} months
-              </p>
+              <p className="font-medium text-black">{patient.ageYears || 0} years {patient.ageMonths || 0} months</p>
             </div>
             <div>
               <p className="text-sm text-black">Date of Birth</p>
-              <p className="font-medium">{patient.dob ? new Date(patient.dob).toLocaleDateString() : "N/A"}</p>
+              <p className="font-medium text-black">{patient.dob ? new Date(patient.dob).toLocaleDateString() : "N/A"}</p>
             </div>
             <div>
               <p className="text-sm text-black">Doctor</p>
-              <p className="font-medium">{patient.doctor?.name || "Unassigned"}</p>
+              <p className="font-medium text-black">{patient.doctor?.name || "Unassigned"}</p>
             </div>
           </div>
         </div>
 
+        {/* Physical Measurements */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold text-black mb-4">Physical Measurements</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Physical Measurements</h2>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <p className="text-sm text-black">Height</p>
-              <p className="font-medium">{patient.heightCm ? `${patient.heightCm} cm` : "N/A"}</p>
+              <p className="font-medium text-black">{patient.heightCm ? `${patient.heightCm} cm` : "N/A"}</p>
             </div>
             <div>
               <p className="text-sm text-black">Weight</p>
-              <p className="font-medium">{patient.weightKg ? `${patient.weightKg} kg` : "N/A"}</p>
+              <p className="font-medium text-black">{patient.weightKg ? `${patient.weightKg} kg` : "N/A"}</p>
             </div>
             <div>
               <p className="text-sm text-black">BMI</p>
-              <p className="font-medium">{patient.bmi ? patient.bmi.toFixed(2) : "N/A"}</p>
+              <p className="font-medium text-black">{patient.bmi ? patient.bmi.toFixed(2) : "N/A"}</p>
             </div>
           </div>
         </div>
 
+        {/* Contact Info */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold text-black mb-4">Contact Information</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Contact Information</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-black">Phone</p>
-              <p className="font-medium">{patient.contactNumber || "N/A"}</p>
+              <p className="font-medium text-black">{patient.contactNumber || "N/A"}</p>
             </div>
             <div>
               <p className="text-sm text-black">Email</p>
-              <p className="font-medium">{patient.email || "N/A"}</p>
+              <p className="font-medium text-black">{patient.email || "N/A"}</p>
             </div>
             <div className="col-span-2">
               <p className="text-sm text-black">Address</p>
-              <p className="font-medium">{patient.address || "N/A"}</p>
+              <p className="font-medium text-black">{patient.address || "N/A"}</p>
             </div>
           </div>
         </div>
 
+        {/* Female Reproductive Health */}
         {patient.gender === "Female" && (
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-semibold text-black mb-4">Reproductive Health</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Reproductive Health</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-black">Pregnancies</p>
-                <p className="font-medium">{patient.pregnancyCount || 0}</p>
+                <p className="font-medium text-black">{patient.pregnancyCount || 0}</p>
               </div>
               <div>
                 <p className="text-sm text-black">Currently Pregnant</p>
-                <p className="font-medium">{patient.pregnancyStatus ? "Yes" : "No"}</p>
+                <p className="font-medium text-black">{patient.pregnancyStatus ? "Yes" : "No"}</p>
               </div>
               <div>
                 <p className="text-sm text-black">Used Female Hormones</p>
-                <p className="font-medium">{patient.everUsedFemaleHormones ? "Yes" : "No"}</p>
+                <p className="font-medium text-black">{patient.everUsedFemaleHormones ? "Yes" : "No"}</p>
               </div>
             </div>
           </div>
         )}
 
+        {/* Blood Metals */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-black">Blood Metals History</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Blood Metals History</h2>
             <button
               onClick={() => setShowAddBloodMetals(!showAddBloodMetals)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <FiPlus />
               Add Blood Metals
@@ -247,92 +246,36 @@ export default function PatientDetails() {
           </div>
 
           {showAddBloodMetals && (
-            <form onSubmit={handleAddBloodMetals} className="mb-6 bg-green-50 p-4 rounded-md">
+            <form onSubmit={handleAddBloodMetals} className="mb-6 bg-blue-50 p-4 rounded-md">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Lead (µmol/L)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={bloodMetalForm.lead_umolL}
-                    onChange={(e) =>
-                      setBloodMetalForm({
-                        ...bloodMetalForm,
-                        lead_umolL: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Mercury (µmol/L)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={bloodMetalForm.mercury_umolL}
-                    onChange={(e) =>
-                      setBloodMetalForm({
-                        ...bloodMetalForm,
-                        mercury_umolL: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Cadmium (µmol/L)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={bloodMetalForm.cadmium_umolL}
-                    onChange={(e) =>
-                      setBloodMetalForm({
-                        ...bloodMetalForm,
-                        cadmium_umolL: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Selenium (µmol/L)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={bloodMetalForm.selenium_umolL}
-                    onChange={(e) =>
-                      setBloodMetalForm({
-                        ...bloodMetalForm,
-                        selenium_umolL: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">Manganese (µmol/L)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={bloodMetalForm.manganese_umolL}
-                    onChange={(e) =>
-                      setBloodMetalForm({
-                        ...bloodMetalForm,
-                        manganese_umolL: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
+                {["lead", "mercury", "cadmium", "selenium", "manganese"].map((metal) => (
+                  <div key={metal}>
+                    <label className="block text-sm font-medium text-black mb-1">
+                      {metal.charAt(0).toUpperCase() + metal.slice(1)} (µmol/L)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={bloodMetalForm[`${metal}_umolL`]}
+                      onChange={(e) =>
+                        setBloodMetalForm({
+                          ...bloodMetalForm,
+                          [`${metal}_umolL`]: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    />
+                  </div>
+                ))}
               </div>
               <div className="flex gap-2 mt-4">
-                <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                   Save
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddBloodMetals(false)}
-                  className="px-4 py-2 bg-gray-200 text-black rounded-md hover:bg-gray-300"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                 >
                   Cancel
                 </button>
@@ -347,12 +290,11 @@ export default function PatientDetails() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-black uppercase">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-black uppercase">Lead</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-black uppercase">Mercury</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-black uppercase">Cadmium</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-black uppercase">Selenium</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-black uppercase">Manganese</th>
+                    {["Date", "Lead", "Mercury", "Cadmium", "Selenium", "Manganese"].map((header) => (
+                      <th key={header} className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                        {header}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -372,6 +314,5 @@ export default function PatientDetails() {
           )}
         </div>
       </div>
-    </div>
   )
 }

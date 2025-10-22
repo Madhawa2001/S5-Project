@@ -10,6 +10,7 @@ export default function EditPatient() {
   const navigate = useNavigate()
   const { authenticatedFetch, isLoggedIn } = useAuth()
 
+  // Get patient ID either from state or fallback
   const patientId = location.state?.patient?.id
   if (!patientId) navigate("/home")
 
@@ -17,8 +18,9 @@ export default function EditPatient() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
+  // Fetch patient details
   useEffect(() => {
-    const fetchPatientDetails = async () => {
+    const fetchPatient = async () => {
       try {
         setLoading(true)
         const res = await authenticatedFetch(`http://localhost:5000/patients/${patientId}`)
@@ -32,43 +34,47 @@ export default function EditPatient() {
         setLoading(false)
       }
     }
-
-    fetchPatientDetails()
+    fetchPatient()
   }, [authenticatedFetch, patientId])
 
+  // Delete patient
   const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete this patient?")) {
-      try {
-        setLoading(true)
-        const res = await authenticatedFetch(`http://localhost:5000/patients/${patientId}`, {
-          method: "DELETE",
-        })
-        if (!res.ok) throw new Error("Failed to delete patient")
-        alert("Patient deleted successfully!")
-        navigate("/patients")
-      } catch (err) {
-        console.error(err)
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
+    if (!confirm("Are you sure you want to delete this patient?")) return
+    try {
+      setLoading(true)
+      const res = await authenticatedFetch(`http://localhost:5000/patients/${patientId}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("Failed to delete patient")
+      alert("Patient deleted successfully!")
+      navigate("/patients")
+    } catch (err) {
+      console.error(err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
-  if (loading) return <div className="text-center py-12">Loading...</div>
+  if (loading)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin h-12 w-12 border-b-2 border-blue-600 rounded-full"></div>
+      </div>
+    )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 p-4">
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Navigation Buttons */}
         <div className="flex items-center gap-4">
           <button
-            className="border border-green-300 text-green-700 hover:bg-green-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors flex items-center"
-            onClick={() => navigate(isLoggedIn ? "/home" : "/")}
+            className="border border-blue-300 text-blue-700 hover:bg-blue-50 bg-transparent font-medium py-2 px-4 rounded-md transition-colors flex items-center"
+            onClick={() => navigate(isLoggedIn ? "/patients" : "/")}
           >
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Home
+            Back to Patients
           </button>
 
           <button
@@ -83,17 +89,19 @@ export default function EditPatient() {
           </button>
         </div>
 
+        {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-green-800">Edit Patient Details</h1>
-          <p className="text-green-600">Update patient demographics and blood metal details below</p>
+          <h1 className="text-3xl font-bold text-blue-800">Edit Patient Details</h1>
+          <p className="text-blue-600">Update patient demographics and blood metal details below</p>
         </div>
 
+        {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">{error}</div>
         )}
 
+        {/* Patient Form */}
         {patient && <PatientForm patientId={patientId} initialData={patient} />}
       </div>
-    </div>
   )
 }
