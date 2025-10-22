@@ -17,13 +17,14 @@ export default function EditPatient() {
   const [patient, setPatient] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const VITE_API_URL = import.meta.env.VITE_API_URL;
 
   // Fetch patient details
   useEffect(() => {
     const fetchPatient = async () => {
       try {
         setLoading(true)
-        const res = await authenticatedFetch(`http://localhost:5000/patients/${patientId}`)
+        const res = await authenticatedFetch(`${VITE_API_URL}/patients/${patientId}`)
         if (!res.ok) throw new Error("Failed to fetch patient details")
         const data = await res.json()
         setPatient(data)
@@ -42,7 +43,7 @@ export default function EditPatient() {
     if (!confirm("Are you sure you want to delete this patient?")) return
     try {
       setLoading(true)
-      const res = await authenticatedFetch(`http://localhost:5000/patients/${patientId}`, {
+      const res = await authenticatedFetch(`${VITE_API_URL}/patients/${patientId}`, {
         method: "DELETE",
       })
       if (!res.ok) throw new Error("Failed to delete patient")
