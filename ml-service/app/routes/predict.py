@@ -331,7 +331,7 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
     else:
         clf = MODELS[model]
         results[model] = compute_shap_for_model(clf, model, input.features)
-
+    print({"model": model, "shap": results})
     return {"model": model, "shap": results}
 
 
