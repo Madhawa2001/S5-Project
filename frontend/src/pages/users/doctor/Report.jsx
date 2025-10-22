@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "../../../contexts/AuthContext"
 
 export default function Report() {
   const navigate = useNavigate()
