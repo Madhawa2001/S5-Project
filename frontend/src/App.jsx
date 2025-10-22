@@ -3,7 +3,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import Login from "./pages/auth/Login"
 import Register from "./pages/auth/Register"
-import Home from "./pages/users/Home"
+import PatientList from "./pages/users/Patient-list"
 import AddPatient from "./pages/users/Add-patient"
 import PatientDetails from "./pages/users/Patient-details"
 import EditPatient from "./pages/users/Edit-patient"
@@ -15,6 +15,9 @@ import AccessLogs from "./pages/admin/Access-logs"
 import { useAuth } from "./contexts/AuthContext"
 import Layout from "./components/Layout"
 import ProtectedRoute from "./components/ProtectedRoute"
+import DoctorDashboard from "./pages/users/doctor/Doctor-dashboard"
+import NurseDashboard from "./pages/users/nurse/Nurse-dashboard"
+import AdminDashboard from "./pages/admin/Admin-dashboard"
 
 function App() {
   const { isLoggedIn, loading, user } = useAuth()
@@ -27,21 +30,36 @@ function App() {
     )
   }
 
+  // Helper: default dashboard based on role
+  const getDefaultDashboard = () => {
+    if (!user) return "/login"
+    switch (user.role) {
+      case "admin":
+        return "/admin/dashboard"
+      case "doctor":
+        return "/doctor/dashboard"
+      case "nurse":
+        return "/nurse/dashboard"
+      default:
+        return "/login"
+    }
+  }
+
   return (
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/" element={isLoggedIn ? <Navigate to={getDefaultDashboard()} /> : <Login />} />
+        <Route path="/login" element={isLoggedIn ? <Navigate to={getDefaultDashboard()} /> : <Login />} />
         <Route path="/register" element={<Register />} />
 
         {/* Protected routes with layout */}
         <Route
-          path="/home"
+          path="/patients"
           element={
             <ProtectedRoute>
               <Layout>
-                <Home />
+                <PatientList />
               </Layout>
             </ProtectedRoute>
           }
@@ -79,7 +97,7 @@ function App() {
         <Route
           path="/report"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["doctor"]}>
               <Layout>
                 <Report />
               </Layout>
@@ -87,7 +105,7 @@ function App() {
           }
         />
         <Route
-          path="/requests"
+          path="/admin/requests"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <Layout>
@@ -136,22 +154,38 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Fallback route */}
         <Route
-          path="*"
+          path="/admin/dashboard"
           element={
-            isLoggedIn ? (
-              user?.role === "admin" ? (
-                <Navigate to="/admin/users" />
-              ) : (
-                <Navigate to="/home" />
-              )
-            ) : (
-              <Navigate to="/" />
-            )
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Layout>
+                <AdminDashboard />
+              </Layout>
+            </ProtectedRoute>
           }
         />
+        <Route
+          path="/doctor/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={"doctor"}>
+              <Layout>
+                <DoctorDashboard/>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/nurse/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={"nurse"}>
+              <Layout>
+                <NurseDashboard/>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to={getDefaultDashboard()} />} />
       </Routes>
     </Router>
   )

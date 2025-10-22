@@ -1,8 +1,8 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/AuthContext"
-import { useEffect, useState } from "react"
 import { FiCheck, FiX } from "react-icons/fi"
 
 export default function AdminUsers() {
@@ -17,12 +17,10 @@ export default function AdminUsers() {
       navigate("/login")
       return
     }
-
     if (user?.role !== "admin") {
       navigate("/home")
       return
     }
-
     fetchUsers()
   }, [user, isLoggedIn, navigate])
 
@@ -30,7 +28,6 @@ export default function AdminUsers() {
     try {
       setLoading(true)
       const response = await authenticatedFetch("http://localhost:5000/admin/users")
-
       if (response.ok) {
         const data = await response.json()
         setUsers(data || [])
@@ -53,32 +50,30 @@ export default function AdminUsers() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
       {/* Header */}
-      {/* <div className="bg-white shadow-sm border-b border-green-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-green-800">Admin Dashboard</h1>
-              <p className="text-sm text-green-600">Welcome back, {user?.name || "Admin"}</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate("/requests")}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
-              >
-                Requests
-              </button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium"
-              >
-                Logout
-              </button>
-            </div>
+      <div className="bg-white shadow-sm border-b border-green-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-green-800">Admin Dashboard</h1>
+            <p className="text-sm text-green-600">Welcome back, {user?.name || "Admin"}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/requests")}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+            >
+              Requests
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium"
+            >
+              Logout
+            </button>
           </div>
         </div>
-      </div> */}
+      </div>
 
-      {/* Main Content */}
+      {/* Users Table */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-md border border-green-200 p-6">
           <div className="flex items-center justify-between mb-6">
@@ -109,24 +104,11 @@ export default function AdminUsers() {
               <table className="min-w-full divide-y divide-green-200">
                 <thead className="bg-green-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                      Registered
-                    </th>
-                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">
-                      Actions
-                    </th> */}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-green-700 uppercase tracking-wider">Registered</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-green-100">
@@ -157,14 +139,6 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-green-700">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
-                      {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          className="text-green-600 hover:text-green-900"
-                          onClick={() => navigate("/admin/access-logs")}
-                        >
-                          Logs
-                        </button>
-                      </td> */}
                     </tr>
                   ))}
                 </tbody>

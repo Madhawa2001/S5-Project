@@ -42,11 +42,9 @@ export default function PatientForm({ patientId, initialData }) {
   })
 
   useEffect(() => {
-    if (user?.role === "nurse") {
-      fetchDoctors()
-    }
+    if (user?.role === "nurse") fetchDoctors()
     if (initialData) {
-      const hasBloodMetals = initialData.bloodMetals && initialData.bloodMetals.length > 0
+      const hasBloodMetals = initialData.bloodMetals?.length > 0
       setIncludeBloodMetals(hasBloodMetals)
 
       setFormData({
@@ -76,18 +74,9 @@ export default function PatientForm({ patientId, initialData }) {
   }
 
   const handleChange = (e) => {
-    const { name, value, type } = e.target
-
-    if (type === "checkbox") {
-      const checked = e.target.checked
-      setFormData({ ...formData, [name]: checked })
-    } else {
-      setFormData({ ...formData, [name]: value })
-    }
-    // Clear validation error for this field
-    if (validationErrors[name]) {
-      setValidationErrors({ ...validationErrors, [name]: "" })
-    }
+    const { name, value, type, checked } = e.target
+    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value })
+    if (validationErrors[name]) setValidationErrors({ ...validationErrors, [name]: "" })
   }
 
   const validateForm = () => {
@@ -95,55 +84,28 @@ export default function PatientForm({ patientId, initialData }) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Validate required fields
-    if (!formData.name.trim()) {
-      errors.name = "Full name is required"
-    }
+    if (!formData.name.trim()) errors.name = "Full name is required"
+    if (!formData.dob) errors.dob = "Date of birth is required"
+    else if (new Date(formData.dob) > today) errors.dob = "Date of birth cannot be in the future"
+    if (!formData.gender) errors.gender = "Gender is required"
 
-    if (!formData.dob) {
-      errors.dob = "Date of birth is required"
-    } else {
-      const dobDate = new Date(formData.dob)
-      if (dobDate > today) {
-        errors.dob = "Date of birth cannot be in the future"
-      }
-    }
-
-    if (!formData.gender) {
-      errors.gender = "Gender is required"
-    }
-
-    // Validate metrics are not negative
-    const metricFields = ["heightCm", "weightKg", "pregnancyCount", "vaginalDeliveries"]
-    metricFields.forEach((field) => {
-      if (formData[field] !== "" && formData[field] !== null) {
-        const value = Number.parseFloat(formData[field])
-        if (value < 0) {
-          errors[field] = `${field} cannot be negative`
-        }
-      }
+    ;["heightCm", "weightKg", "pregnancyCount", "vaginalDeliveries"].forEach((field) => {
+      if (formData[field] !== "" && Number(formData[field]) < 0)
+        errors[field] = `${field} cannot be negative`
     })
 
-    // Validate blood metals are not negative if included
     if (includeBloodMetals) {
-      const bloodMetalFields = ["lead_umolL", "mercury_umolL", "cadmium_umolL", "selenium_umolL", "manganese_umolL"]
-      bloodMetalFields.forEach((field) => {
-        if (formData[field] !== "" && formData[field] !== null) {
-          const value = Number.parseFloat(formData[field])
-          if (value < 0) {
+      ;["lead_umolL", "mercury_umolL", "cadmium_umolL", "selenium_umolL", "manganese_umolL"].forEach(
+        (field) => {
+          if (formData[field] !== "" && Number(formData[field]) < 0)
             errors[field] = `${field} cannot be negative`
-          }
         }
-      })
+      )
     }
 
-    // Validate vaginal deliveries <= pregnancy count
     if (formData.pregnancyCount && formData.vaginalDeliveries) {
-      const pregnancies = Number.parseInt(formData.pregnancyCount)
-      const deliveries = Number.parseInt(formData.vaginalDeliveries)
-      if (deliveries > pregnancies) {
+      if (Number(formData.vaginalDeliveries) > Number(formData.pregnancyCount))
         errors.vaginalDeliveries = "Vaginal deliveries cannot exceed pregnancy count"
-      }
     }
 
     setValidationErrors(errors)
@@ -154,19 +116,12 @@ export default function PatientForm({ patientId, initialData }) {
     e.preventDefault()
     setError("")
     setSuccess("")
-
-    if (!validateForm()) {
-      setError("Please fix the validation errors below")
-      return
-    }
+    if (!validateForm()) return setError("Please fix the validation errors below")
 
     setLoading(true)
-
     try {
       const payload = { ...formData }
-
-      // Convert string fields to numbers where needed
-      const numericFields = [
+      ;[
         "heightCm",
         "weightKg",
         "pregnancyCount",
@@ -176,35 +131,21 @@ export default function PatientForm({ patientId, initialData }) {
         "cadmium_umolL",
         "selenium_umolL",
         "manganese_umolL",
-      ]
-
-      numericFields.forEach((field) => {
-        if (payload[field] !== "" && payload[field] !== null && payload[field] !== undefined) {
-          const numValue = Number.parseFloat(payload[field])
-          payload[field] = isNaN(numValue) ? null : numValue
-        } else {
-          payload[field] = null
-        }
+      ].forEach((field) => {
+        const num = Number(payload[field])
+        payload[field] = isNaN(num) ? null : num
       })
-
-      // Special handling for integer fields
-      const integerFields = ["pregnancyCount", "vaginalDeliveries"]
-      integerFields.forEach((field) => {
-        if (payload[field] !== null) {
-          payload[field] = Number.parseInt(payload[field]) || null
-        }
+      ;["pregnancyCount", "vaginalDeliveries"].forEach((field) => {
+        if (payload[field] !== null) payload[field] = parseInt(payload[field]) || null
       })
 
       if (!includeBloodMetals || !patientId) {
-        delete payload.lead_umolL
-        delete payload.mercury_umolL
-        delete payload.cadmium_umolL
-        delete payload.selenium_umolL
-        delete payload.manganese_umolL
+        ;["lead_umolL", "mercury_umolL", "cadmium_umolL", "selenium_umolL", "manganese_umolL"].forEach(
+          (field) => delete payload[field]
+        )
       }
 
       if (patientId) {
-        // Update existing patient
         const res = await authenticatedFetch(`http://localhost:5000/patients/${patientId}`, {
           method: "PUT",
           body: JSON.stringify(payload),
@@ -213,13 +154,12 @@ export default function PatientForm({ patientId, initialData }) {
 
         if (includeBloodMetals) {
           const bloodPayload = {
-            lead_umolL: formData.lead_umolL ? Number.parseFloat(formData.lead_umolL) : null,
-            mercury_umolL: formData.mercury_umolL ? Number.parseFloat(formData.mercury_umolL) : null,
-            cadmium_umolL: formData.cadmium_umolL ? Number.parseFloat(formData.cadmium_umolL) : null,
-            selenium_umolL: formData.selenium_umolL ? Number.parseFloat(formData.selenium_umolL) : null,
-            manganese_umolL: formData.manganese_umolL ? Number.parseFloat(formData.manganese_umolL) : null,
+            lead_umolL: Number(formData.lead_umolL) || null,
+            mercury_umolL: Number(formData.mercury_umolL) || null,
+            cadmium_umolL: Number(formData.cadmium_umolL) || null,
+            selenium_umolL: Number(formData.selenium_umolL) || null,
+            manganese_umolL: Number(formData.manganese_umolL) || null,
           }
-
           try {
             await authenticatedFetch(`http://localhost:5000/bloodMetals/${patientId}`, {
               method: "POST",
@@ -229,10 +169,8 @@ export default function PatientForm({ patientId, initialData }) {
             console.warn("Failed to update blood metals:", err)
           }
         }
-
         setSuccess("Patient updated successfully")
       } else {
-        // Create new patient
         const res = await authenticatedFetch("http://localhost:5000/patients", {
           method: "POST",
           body: JSON.stringify(payload),
@@ -240,16 +178,14 @@ export default function PatientForm({ patientId, initialData }) {
         if (!res.ok) throw new Error("Failed to create patient")
         const newPatient = await res.json()
 
-        // Add blood metals if selected
         if (includeBloodMetals) {
           const bloodPayload = {
-            lead_umolL: formData.lead_umolL ? Number.parseFloat(formData.lead_umolL) : null,
-            mercury_umolL: formData.mercury_umolL ? Number.parseFloat(formData.mercury_umolL) : null,
-            cadmium_umolL: formData.cadmium_umolL ? Number.parseFloat(formData.cadmium_umolL) : null,
-            selenium_umolL: formData.selenium_umolL ? Number.parseFloat(formData.selenium_umolL) : null,
-            manganese_umolL: formData.manganese_umolL ? Number.parseFloat(formData.manganese_umolL) : null,
+            lead_umolL: Number(formData.lead_umolL) || null,
+            mercury_umolL: Number(formData.mercury_umolL) || null,
+            cadmium_umolL: Number(formData.cadmium_umolL) || null,
+            selenium_umolL: Number(formData.selenium_umolL) || null,
+            manganese_umolL: Number(formData.manganese_umolL) || null,
           }
-
           try {
             await authenticatedFetch(`http://localhost:5000/bloodMetals/${newPatient.id}`, {
               method: "POST",
@@ -274,516 +210,227 @@ export default function PatientForm({ patientId, initialData }) {
 
   const isFemale = formData.gender === "Female"
 
-return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200">{error}</div>}
+  return (
+    <form className="bg-white shadow-md rounded-xl p-6 space-y-6" onSubmit={handleSubmit}>
+      {error && <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-md">{error}</div>}
+      {success && <div className="p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-md">{success}</div>}
 
-        {success && (
-            <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm border border-green-200">{success}</div>
-        )}
+      {/* Basic Info */}
+        <Section title="Basic Information">
+          <div className="text-black">
+            <Input label="Full Name *" name="name" value={formData.name} onChange={handleChange} error={validationErrors.name} />
+          </div>
+          <div className="text-black">
+            <Input label="NIC Number" name="nic" value={formData.nic} onChange={handleChange} />
+          </div>
+          <div className="text-black">
+            <Input label="Date of Birth *" type="date" name="dob" value={formData.dob} onChange={handleChange} error={validationErrors.dob} />
+          </div>
+          <div className="text-black">
+            <Select label="Gender *" name="gender" value={formData.gender} onChange={handleChange} options={["Male", "Female"]} />
+          </div>
+        </Section>
 
-        <div className="border-b border-green-200 pb-4">
-            <h3 className="text-lg font-semibold text-green-800">Basic Information</h3>
-        </div>
+        {/* Physical Measurements */}
+            <Section title="Physical Measurements">
+              <div className="text-black">
+                <Input label="Height (cm)" type="number" name="heightCm" value={formData.heightCm} onChange={handleChange} error={validationErrors.heightCm} />
+              </div>
+              <div className="text-black">
+                <Input label="Weight (kg)" type="number" name="weightKg" value={formData.weightKg} onChange={handleChange} error={validationErrors.weightKg} />
+              </div>
+            </Section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                        validationErrors.name ? "border-red-500" : "border-gray-300"
-                    }`}
-                />
-                {validationErrors.name && <p className="text-red-500 text-xs mt-1">{validationErrors.name}</p>}
-            </div>
+            {/* Contact Info */}
+            <Section title="Contact Information">
+              <div className="text-black">
+                <Input label="Contact Number" name="contactNumber" value={formData.contactNumber} onChange={handleChange} />
+              </div>
+              <div className="text-black">
+                <Input label="Email" type="email" name="email" value={formData.email} onChange={handleChange} />
+              </div>
+              <div className="text-black">
+                <Textarea label="Address" name="address" value={formData.address} onChange={handleChange} />
+              </div>
+            </Section>
 
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">NIC Number</label>
-                <input
-                    type="text"
-                    name="nic"
-                    value={formData.nic}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
-                <input
-                    type="date"
-                    name="dob"
-                    value={formData.dob}
-                    onChange={handleChange}
-                    required
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                        validationErrors.dob ? "border-red-500" : "border-gray-300"
-                    }`}
-                />
-                {validationErrors.dob && <p className="text-red-500 text-xs mt-1">{validationErrors.dob}</p>}
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
-                <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                </select>
-            </div>
-        </div>
-
-        <div className="border-b border-green-200 pb-4 pt-4">
-            <h3 className="text-lg font-semibold text-green-800">Physical Measurements</h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
-                <input
-                    type="number"
-                    name="heightCm"
-                    value={formData.heightCm}
-                    onChange={handleChange}
-                    step="0.1"
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                        validationErrors.heightCm ? "border-red-500" : "border-gray-300"
-                    }`}
-                />
-                {validationErrors.heightCm && <p className="text-red-500 text-xs mt-1">{validationErrors.heightCm}</p>}
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
-                <input
-                    type="number"
-                    name="weightKg"
-                    value={formData.weightKg}
-                    onChange={handleChange}
-                    step="0.1"
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                        validationErrors.weightKg ? "border-red-500" : "border-gray-300"
-                    }`}
-                />
-                {validationErrors.weightKg && <p className="text-red-500 text-xs mt-1">{validationErrors.weightKg}</p>}
-            </div>
-        </div>
-
-        <div className="border-b border-green-200 pb-4 pt-4">
-            <h3 className="text-lg font-semibold text-green-800">Contact Information</h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                <input
-                    type="tel"
-                    name="contactNumber"
-                    value={formData.contactNumber}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                />
-            </div>
-
-            <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                />
-            </div>
-        </div>
-
-        <div className="border-b border-green-200 pb-4 pt-4">
-            <h3 className="text-lg font-semibold text-green-800">Additional Information</h3>
-        </div>
-
-        <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Marital Status</label>
-            <select
+            {/* Additional Info */}
+            <Section title="Additional Information">
+              <div className="text-black">
+                <Select
+                label="Marital Status"
                 name="maritalStatus"
                 value={formData.maritalStatus}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-            >
-                <option value="">Select...</option>
-                <option value="MARRIED">Married</option>
-                <option value="WIDOWED">Widowed</option>
-                <option value="DIVORCED">Divorced</option>
-                <option value="SEPARATED">Separated</option>
-                <option value="NEVER_MARRIED">Never Married</option>
-                <option value="LIVING_WITH_PARTNER">Living with Partner</option>
-            </select>
-        </div>
+                options={[
+                  "Select...",
+                  "MARRIED",
+                  "WIDOWED",
+                  "DIVORCED",
+                  "SEPARATED",
+                  "NEVER_MARRIED",
+                  "LIVING_WITH_PARTNER",
+                ]}
+                />
+              </div>
+            </Section>
 
-        {isFemale && (
-            <>
-                <div className="border-b border-green-200 pb-4 pt-4">
-                    <h3 className="text-lg font-semibold text-green-800">Reproductive Health (Female Only)</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Number of Pregnancies</label>
-                        <input
+            {/* Female Reproductive */}
+            {isFemale && (
+                <Section title="Reproductive Health (Female Only)">
+                    <div className="text-black md:col-span-2">
+                        <Input
+                            label="Number of Pregnancies"
                             type="number"
                             name="pregnancyCount"
                             value={formData.pregnancyCount}
                             onChange={handleChange}
-                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                validationErrors.pregnancyCount ? "border-red-500" : "border-gray-300"
-                            }`}
+                            error={validationErrors.pregnancyCount}
                         />
-                        {validationErrors.pregnancyCount && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.pregnancyCount}</p>
-                        )}
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Vaginal Deliveries</label>
-                        <input
-                            type="number"
-                            name="vaginalDeliveries"
-                            value={formData.vaginalDeliveries}
-                            onChange={handleChange}
-                            className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                validationErrors.vaginalDeliveries ? "border-red-500" : "border-gray-300"
-                            }`}
-                        />
-                        {validationErrors.vaginalDeliveries && (
-                            <p className="text-red-500 text-xs mt-1">{validationErrors.vaginalDeliveries}</p>
-                        )}
+                    <div className="text-black md:col-span-2 space-y-2">
+                        <div>
+                            <Checkbox
+                                label="Currently Pregnant"
+                                name="pregnancyStatus"
+                                checked={formData.pregnancyStatus}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div>
+                            <Checkbox
+                                label="Ever used female hormones"
+                                name="everUsedFemaleHormones"
+                                checked={formData.everUsedFemaleHormones}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div>
+                            <Checkbox
+                                label="Had hysterectomy"
+                                name="hadHysterectomy"
+                                checked={formData.hadHysterectomy}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div>
+                            <Checkbox
+                                label="Ovaries removed"
+                                name="ovariesRemoved"
+                                checked={formData.ovariesRemoved}
+                                onChange={handleChange}
+                            />
+                        </div>
+                        <div>
+                            <Checkbox
+                                label="Ever used birth control pills"
+                                name="everUsedBirthControlPills"
+                                checked={formData.everUsedBirthControlPills}
+                                onChange={handleChange}
+                            />
+                        </div>
                     </div>
+                </Section>
+            )}
+            {user?.role === "nurse" && (
+              <Section title="Assign Doctor">
+                <div className="text-black">
+                <Select
+                  name="doctorId"
+                  value={formData.doctorId}
+                  onChange={handleChange}
+                  options={["Unassigned", ...doctors.map((d) => `${d.name} (${d.email})`)]}
+                />
                 </div>
+              </Section>
+            )}
 
-                <div className="space-y-3">
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            name="pregnancyStatus"
-                            checked={formData.pregnancyStatus}
-                            onChange={handleChange}
-                            className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                        />
-                        <span className="text-sm text-gray-700">Currently Pregnant</span>
-                    </label>
-
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            name="everUsedFemaleHormones"
-                            checked={formData.everUsedFemaleHormones}
-                            onChange={handleChange}
-                            className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                        />
-                        <span className="text-sm text-gray-700">Ever used female hormones</span>
-                    </label>
-
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            name="hadHysterectomy"
-                            checked={formData.hadHysterectomy}
-                            onChange={handleChange}
-                            className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                        />
-                        <span className="text-sm text-gray-700">Had hysterectomy</span>
-                    </label>
-
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            name="ovariesRemoved"
-                            checked={formData.ovariesRemoved}
-                            onChange={handleChange}
-                            className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                        />
-                        <span className="text-sm text-gray-700">Ovaries removed</span>
-                    </label>
-
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            name="everUsedBirthControlPills"
-                            checked={formData.everUsedBirthControlPills}
-                            onChange={handleChange}
-                            className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                        />
-                        <span className="text-sm text-gray-700">Ever used birth control pills</span>
-                    </label>
-                </div>
-            </>
-        )}
-
-        {user?.role === "nurse" && (
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Doctor</label>
-                <select
-                    name="doctorId"
-                    value={formData.doctorId}
+            {/* Blood Metals */}
+            <Section title={`${patientId ? "Blood Metals Data (Optional)" : "Add Blood Metals Data (Optional)"}`}>
+              <div className="text-black">
+                <Checkbox label="Include Blood Metals" checked={includeBloodMetals} onChange={(e) => setIncludeBloodMetals(e.target.checked)} />
+              </div>
+              {includeBloodMetals && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-md border border-blue-200 text-black">
+                {["lead", "mercury", "cadmium", "selenium", "manganese"].map((metal) => (
+                  <div key={metal} className="text-black">
+                    <Input
+                    label={`${metal.charAt(0).toUpperCase() + metal.slice(1)} (µmol/L)`}
+                    type="number"
+                    name={`${metal}_umolL`}
+                    value={formData[`${metal}_umolL`]}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                >
-                    <option value="">Unassigned</option>
-                    {doctors.map((doctor) => (
-                        <option key={doctor.id} value={doctor.id}>
-                            {doctor.name} ({doctor.email})
-                        </option>
-                    ))}
-                </select>
-            </div>
-        )}
-
-        {!patientId && (
-            <>
-                <div className="border-b border-green-200 pb-4 pt-4">
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={includeBloodMetals}
-                            onChange={(e) => setIncludeBloodMetals(e.target.checked)}
-                            className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                        />
-                        <span className="text-lg font-semibold text-green-800">Add Blood Metals Data (Optional)</span>
-                    </label>
+                    step="0.01"
+                    error={validationErrors[`${metal}_umolL`]}
+                    />
+                  </div>
+                ))}
                 </div>
+              )}
+            </Section>
 
-                {includeBloodMetals && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-green-50 p-4 rounded-md border border-green-200">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Lead (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="lead_umolL"
-                                value={formData.lead_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.lead_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.lead_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.lead_umolL}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Mercury (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="mercury_umolL"
-                                value={formData.mercury_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.mercury_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.mercury_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.mercury_umolL}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Cadmium (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="cadmium_umolL"
-                                value={formData.cadmium_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.cadmium_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.cadmium_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.cadmium_umolL}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Selenium (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="selenium_umolL"
-                                value={formData.selenium_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.selenium_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.selenium_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.selenium_umolL}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Manganese (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="manganese_umolL"
-                                value={formData.manganese_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.manganese_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.manganese_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.manganese_umolL}</p>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </>
-        )}
-
-        {patientId && (
-            <>
-                <div className="border-b border-green-200 pb-4 pt-4">
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={includeBloodMetals}
-                            onChange={(e) => setIncludeBloodMetals(e.target.checked)}
-                            className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                        />
-                        <span className="text-lg font-semibold text-green-800">Blood Metals Data (Optional)</span>
-                    </label>
-                </div>
-
-                {includeBloodMetals && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-green-50 p-4 rounded-md border border-green-200">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Lead (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="lead_umolL"
-                                value={formData.lead_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.lead_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.lead_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.lead_umolL}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Mercury (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="mercury_umolL"
-                                value={formData.mercury_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.mercury_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.mercury_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.mercury_umolL}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Cadmium (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="cadmium_umolL"
-                                value={formData.cadmium_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.cadmium_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.cadmium_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.cadmium_umolL}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Selenium (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="selenium_umolL"
-                                value={formData.selenium_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.selenium_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.selenium_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.selenium_umolL}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Manganese (µmol/L)</label>
-                            <input
-                                type="number"
-                                name="manganese_umolL"
-                                value={formData.manganese_umolL}
-                                onChange={handleChange}
-                                step="0.01"
-                                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent text-black ${
-                                    validationErrors.manganese_umolL ? "border-red-500" : "border-gray-300"
-                                }`}
-                            />
-                            {validationErrors.manganese_umolL && (
-                                <p className="text-red-500 text-xs mt-1">{validationErrors.manganese_umolL}</p>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </>
-        )}
-
-        <div className="flex gap-4 pt-4 border-t border-green-200">
-            <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 font-medium transition-colors"
-            >
-                {loading ? "Saving..." : patientId ? "Update Patient" : "Add Patient"}
-            </button>
-            <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 font-medium transition-colors"
-            >
-                Cancel
-            </button>
-        </div>
+            {/* Buttons */}
+      <div className="flex gap-4 pt-4 border-t border-gray-200">
+        <button type="submit" disabled={loading} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 font-medium transition-colors">
+          {loading ? "Saving..." : patientId ? "Update Patient" : "Add Patient"}
+        </button>
+        <button type="button" onClick={() => navigate(-1)} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 font-medium transition-colors">
+          Cancel
+        </button>
+      </div>
     </form>
-)
+  )
 }
+
+// --- Helper Components ---
+const Section = ({ title, children }) => (
+  <div className="space-y-4">
+    <h3 className="text-lg font-semibold text-blue-700 border-b border-blue-200 pb-2">{title}</h3>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
+  </div>
+)
+
+const Input = ({ label, name, value, onChange, type = "text", error, step }) => (
+  <div className="flex flex-col">
+    <label className="text-gray-700 font-medium mb-1">{label}</label>
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      step={step}
+      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+        error ? "border-red-500" : "border-gray-300"
+      }`}
+    />
+    {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+  </div>
+)
+
+const Select = ({ label, name, value, onChange, options }) => (
+  <div className="flex flex-col">
+    <label className="text-gray-700 font-medium mb-1">{label}</label>
+    <select name={name} value={value} onChange={onChange} className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      {options.map((opt, i) => (
+        <option key={i} value={opt === "Unassigned" ? "" : opt}>
+          {opt}
+        </option>
+      ))}
+    </select>
+  </div>
+)
+
+const Textarea = ({ label, name, value, onChange }) => (
+  <div className="flex flex-col md:col-span-2">
+    <label className="text-gray-700 font-medium mb-1">{label}</label>
+    <textarea name={name} value={value} onChange={onChange} rows={2} className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+  </div>
+)
+
+const Checkbox = ({ label, name, checked, onChange }) => (
+  <label className="flex items-center gap-2">
+    <input type="checkbox" name={name} checked={checked} onChange={onChange} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+    <span className="text-gray-700">{label}</span>
+  </label>
+)
