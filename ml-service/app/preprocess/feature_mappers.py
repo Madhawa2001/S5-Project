@@ -122,11 +122,11 @@ def map_common_features(input: Dict) -> Dict:
             return None
 
     # --- Read LBX fields (µg/L or µg/dL) ---
-    lbxpb = safe_float(blood.get("LBXBPB"))  # µg/dL (lead)
-    lbxcd = safe_float(blood.get("LBXBCD"))  # µg/L
-    lbxthg = safe_float(blood.get("LBXTHG")) # µg/L
-    lbxbse = safe_float(blood.get("LBXBSE")) # µg/L
-    lbxbmn = safe_float(blood.get("LBXBMN")) # µg/L
+    lbxpb = safe_float(blood.get("lead_umolL"))  # µg/dL (lead)
+    lbxcd = safe_float(blood.get("cadmium_umolL"))  # µg/L
+    lbxthg = safe_float(blood.get("mercury_umolL")) # µg/L
+    lbxbse = safe_float(blood.get("selenium_umolL")) # µg/L
+    lbxbmn = safe_float(blood.get("manganese_umolL")) # µg/L
 
     # --- Atomic weights for conversion ---
     LEAD_US = 207.2
