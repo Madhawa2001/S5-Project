@@ -34,6 +34,7 @@ export default function Predictions() {
   const [selectedModel, setSelectedModel] = useState("hormone")
   const [predictionResult, setPredictionResult] = useState(null)
   const [sensitivityResult, setSensitivityResult] = useState(null)
+    const [shapResult, setShapResult] = useState(null) // 🟦 Added for SHAP
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [fetchingPatient, setFetchingPatient] = useState(true)
@@ -140,6 +141,29 @@ export default function Predictions() {
     }
   }
 
+  // 🟦 New SHAP function
+  const runShap = async () => {
+    if (!patient) return setError("Please select a patient first.")
+    try {
+      setLoading(true)
+      setError("")
+      setShapResult(null)
+
+      const res = await authenticatedFetch(`${VITE_API_URL}/ml/${selectedModel}/shap/db`, {
+        method: "POST",
+        body: JSON.stringify({ patientId: patient.id }),
+      })
+
+      if (!res.ok) throw new Error("Failed to get SHAP analysis")
+      const data = await res.json()
+      setShapResult(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const downloadReport = async () => {
     if (!patient) return
     try {
@@ -223,6 +247,13 @@ export default function Predictions() {
     )
   }
 
+  const shapChartData = useMemo(() => {
+    if (!shapResult?.shap_values) return []
+    return Object.entries(shapResult.shap_values)
+      .map(([feature, value]) => ({ feature, value }))
+      .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+  }, [shapResult])
+
   if (fetchingPatient) return <div className="flex justify-center items-center h-screen"><div className="animate-spin h-12 w-12 border-b-2 border-green-600 rounded-full"></div></div>
   if (!patient && id) return <div className="p-6 text-center text-red-600">Patient not found</div>
   if (user?.role !== "doctor") return <div className="p-6 text-center text-red-600">Access denied. Only doctors can view predictions.</div>
@@ -275,6 +306,16 @@ export default function Predictions() {
         <div className="flex gap-4 mt-6 flex-wrap">
           <button onClick={runPrediction} disabled={loading} className={`flex-1 py-3 px-6 rounded-md font-medium text-white transition ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}>{loading ? "Running..." : "Get Predictions"}</button>
           <button onClick={runSensitivity} disabled={loading} className={`flex-1 py-3 px-6 rounded-md font-medium text-white transition ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"}`}>{loading ? "Running..." : "Run Sensitivity Analysis"}</button>
+          {/* 🟦 New SHAP button */}
+          <button
+            onClick={runShap}
+            disabled={loading}
+            className={`flex-1 py-3 px-6 rounded-md font-medium text-white transition ${
+              loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            {loading ? "Running..." : "Run SHAP Analysis"}
+          </button>
           {patient && <button onClick={downloadReport} className="flex items-center gap-2 py-3 px-6 rounded-md font-medium text-white bg-blue-600 hover:bg-blue-700"><FiDownload /> Download Report</button>}
         </div>
       </div>
@@ -330,6 +371,35 @@ export default function Predictions() {
             <div className="text-center py-8 text-gray-500">
               <p>No valid sensitivity analysis data available to display.</p>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* 🟦 SHAP Results */}
+      {shapResult && (
+        <div className="bg-white rounded-lg shadow-lg border border-blue-200 p-8">
+          <h2 className="text-xl font-semibold text-blue-800 mb-4">SHAP Feature Importance</h2>
+          {shapChartData.length > 0 ? (
+            <div style={{ width: "100%", height: 400 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={shapChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="feature" angle={-45} textAnchor="end" height={100} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value">
+                    {shapChartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.value > 0 ? "#3b82f6" : "#ef4444"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="text-gray-600">No SHAP data available.</p>
           )}
         </div>
       )}
