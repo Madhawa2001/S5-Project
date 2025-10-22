@@ -1,4 +1,7 @@
 from typing import Dict
+import numpy as np
+import pandas as pd
+from app.preprocess.infertility_preprocessor import preprocess_infertility_for_model
 
 # --- Column orders (per model) ---
 COLUMN_ORDERS = {
@@ -25,10 +28,11 @@ COLUMN_ORDERS = {
 
     "menstrual": ['RIDAGEYR', 'RHD280', 'RHQ540',
     'RHQ305', 'DMDMARTL', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN'],
-    "infertility": [
-        'RIDAGEYR', 'LBXBPB', 'LBXBCD', 'LBXTHG', 'LBXBSE', 'LBXBMN'
-    ],
 
+    "infertility": [
+         'WTSH2YR', 'LBXBPB', 'LBDBPBSI', 'LBXBCD', 'LBDBCDSI', 'LBXTHG', 'LBDTHGSI', 'LBXBSE', 'LBDBSESI', 'LBXBMN', 'LBDBMNSI',
+         'RHQ031', 'RHQ060', 'RHQ078', 'RHD280', 'RHQ420', 'RHQ540', 'RIDAGEYR', 'RIDRETH3', 'DMDBORN4', 'DMDMARTL' ]
+    ,
 }
 
 MARITAL_STATUS_MAP = {
@@ -72,7 +76,7 @@ def map_common_features(input: Dict) -> Dict:
         "LBDBMNSI": blood.get("manganese_umolL"),          # Manganese
         "BMXBMI": input.get("bmi"),                                    # TODO: compute if you have weight+height
         # Extra placeholders for other models
-        "RHQ031": None,
+        "RHQ031": input.get("vaginalDeliveries"),
         "RHQ160": int(input.get("pregnancyCount", 0) or 0),
         "RHQ200": None,
         "is_menopausal": None,
@@ -84,11 +88,15 @@ def map_common_features(input: Dict) -> Dict:
         "LBXBMN": blood.get("manganese_umolL") / 18.20 if blood.get("manganese_umolL") else None,
         "DMDMARTL": marital_code,
         "RHD280": 1 if input.get("hadHysterectomy") else 2,        
-        # "RHQ166": input.get("vaginalDeliveries"),
+        #"RHQ166": input.get("vaginalDeliveries"),
         "RHQ540": 1 if input.get("everUsedFemaleHormones") else 2,  
         "RHQ305": 1 if input.get("ovariesRemoved") else 2,  
-        # "RHQ074": 1 if input.get("triedYearPregnant") else 2,  
-        "RHQ420": 1 if input.get("everUsedBirthControlPills") else 2,  
+        "RHQ060": 1 if input.get("triedYearPregnant") else 2,  
+        "RHQ420": 1 if input.get("everUsedBirthControlPills") else 2,
+        "RIDRETH3": None,                 
+        "DMDBORN4": None,
+        "WTSH2YR": None,
+        "RHQ078": None,
     }
 
 # --- Model-specific mappers ---
@@ -120,10 +128,57 @@ def map_menstrual_features(input: Dict) -> Dict:
     features["RHD280"] = str(features["RHD280"])
     return {col: features.get(col) for col in COLUMN_ORDERS["menstrual"]}
 
+# import pandas as pd
+
+# def map_infertility_features(input: Dict) -> Dict:
+#     features = map_common_features(input)
+
+#     # --- Explicit mapping using already-normalized 'features' ---
+#     features["lead_ugdl"] = features.get("LBXBPB")
+#     features["cadmium_ugl"] = features.get("LBXBCD")
+#     features["mercury_ugl"] = features.get("LBXTHG")
+#     features["selenium_ugl"] = features.get("LBXBSE")
+#     features["manganese_ugl"] = features.get("LBXBMN")
+
+#     # Demographic features
+#     features["age_years"] = features.get("RIDAGEYR")
+#     features["race"] = features.get("race")
+#     features["country_birth"] = features.get("country_birth")
+#     features["marital_status"] = features.get("DMDMARTL")
+
+#     # Reproductive / lifestyle history
+#     features["regular_periods"] = features.get("RHQ305")
+#     features["pelvic_infection"] = features.get("RHQ200")
+#     features["hysterectomy"] = features.get("RHD280")
+#     features["birth_control"] = features.get("RHQ420")
+#     features["female_hormones"] = features.get("RHQ540")
+#     features["last_period_age"] = features.get("RHQ160")
+
+#     # --- Convert to DataFrame for safe dtype cleaning ---
+#     df = pd.DataFrame([{col: features.get(col) for col in COLUMN_ORDERS["infertility"]}])
+
+#     # 1️⃣ Convert booleans → 1/2
+#     df = df.applymap(lambda x: 1 if x is True else (2 if x is False else x))
+
+#     # 2️⃣ Convert "1"/"2" strings → numeric
+#     df = df.apply(pd.to_numeric, errors="ignore")
+
+#     # 3️⃣ Encode object-type columns as category codes
+#     for col in df.select_dtypes("object"):
+#         df[col] = df[col].astype("category").cat.codes
+
+#     # 4️⃣ Return as a dict (like your other mappers)
+#     return df.iloc[0].to_dict()
+
 def map_infertility_features(input: Dict) -> Dict:
     features = map_common_features(input)
-    return {col: features.get(col) for col in COLUMN_ORDERS["infertility"]}
-
+    # --- Final order as model expects ---
+    tempdf = {col: features.get(col) for col in COLUMN_ORDERS["infertility"]}
+    tempdf = preprocess_infertility_for_model(tempdf)
+    print("="*40)
+    print("Temp DF before preprocessing:", tempdf.columns)
+    print("="*40)
+    return tempdf
 
 # --- Mapper registry ---
 FEATURE_MAPPERS = {
