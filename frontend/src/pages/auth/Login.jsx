@@ -143,7 +143,7 @@ export default function Login() {
         </div>
 
         {/* Google Button */}
-        <button
+        {/* <button
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading}
@@ -155,7 +155,7 @@ export default function Login() {
             className="w-5 h-5"
           />
           Sign in with Google
-        </button>
+        </button> */}
 
         {/* Register & Forgot password */}
         {/* {(role === "doctor" || role === "nurse") && ( */}
