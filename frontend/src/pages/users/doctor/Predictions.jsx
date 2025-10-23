@@ -111,6 +111,14 @@ export default function Predictions() {
         }
       }
 
+      // Round numeric prediction for menopause model to an integer
+      if (selectedModel === "menopause" && data && data.prediction != null) {
+        const num = Number(data.prediction)
+        if (!Number.isNaN(num)) {
+          data.prediction = Math.round(num)
+        }
+      }
+
       setPredictionResult(data)
     } catch (err) {
       console.error(err)
