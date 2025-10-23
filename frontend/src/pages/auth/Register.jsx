@@ -216,14 +216,14 @@ export default function Register() {
             </button>
           </div>
 
-          <div className="relative mt-4">
+          {/* <div className="relative mt-4">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-blue-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-white text-blue-600">Or continue with</span>
             </div>
-          </div>
+          </div> */}
 
           {/* <button
             type="button"

@@ -133,14 +133,14 @@ export default function Login() {
         </form>
 
         {/* Divider */}
-        <div className="relative my-6">
+        {/* <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-blue-200"></div>
           </div>
           <div className="relative flex justify-center text-sm text-blue-600 bg-white px-2">
             Or continue with
           </div>
-        </div>
+        </div> */}
 
         {/* Google Button */}
         {/* <button
