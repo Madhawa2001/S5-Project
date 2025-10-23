@@ -118,6 +118,7 @@ export default function PatientDetails() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Patient Details</h1>
           <div className="flex gap-2">
+            {user?.role === "doctor" && (
             <Link
               to={`/predictions/${id}`}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -125,6 +126,7 @@ export default function PatientDetails() {
               <FiFileText />
               View Predictions
             </Link>
+            )}
             <Link
               to={`/edit-patient`}
               state={{ patient }}
