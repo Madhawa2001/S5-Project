@@ -10,11 +10,11 @@ const prisma = new PrismaClient();
 router.use(verifyToken, requireRole("doctor", "nurse"));
 
 /**
- * ✅ Add a patient
+ *  Add a patient
  * - Nurse can create patient without doctor assignment
  * - Doctor can create patient assigned to themselves
  */
-// ✅ Add a patient (updated)
+//  Add a patient (updated)
 router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
   try {
     const {
@@ -108,7 +108,7 @@ router.post("/", audit("CREATE_PATIENT"), async (req, res) => {
 });
 
 /**
- * 🔍 Search patients by NIC or name
+ * Search patients by NIC or name
  * - Doctor: only their own patients
  * - Nurse: can search all
  */
@@ -155,7 +155,7 @@ router.get("/search", audit("SEARCH_PATIENTS"), async (req, res) => {
 });
 
 /**
- * ✅ List all patients
+ *  List all patients
  */
 router.get("/", audit("LIST_PATIENTS"), async (req, res) => {
   try {
@@ -187,7 +187,7 @@ router.get("/", audit("LIST_PATIENTS"), async (req, res) => {
 });
 
 /**
- * ✅ Get available doctors
+ *  Get available doctors
  */
 router.get(
   "/available-doctors",
@@ -213,7 +213,7 @@ router.get(
 );
 
 /**
- * ✅ Assign doctor to a patient
+ *  Assign doctor to a patient
  */
 router.patch(
   "/:patientId/assign-doctor",
@@ -248,7 +248,7 @@ router.patch(
 );
 
 /**
- * ✅ Get a single patient
+ *  Get a single patient
  */
 router.get("/:patientId", audit("READ_PATIENT"), async (req, res) => {
   try {
@@ -274,7 +274,7 @@ router.get("/:patientId", audit("READ_PATIENT"), async (req, res) => {
 });
 
 /**
- * ✅ Update patient record
+ *  Update patient record
  */
 router.put("/:patientId", audit("UPDATE_PATIENT"), async (req, res) => {
   try {
@@ -308,7 +308,7 @@ router.put("/:patientId", audit("UPDATE_PATIENT"), async (req, res) => {
 });
 
 /**
- * ✅ Delete patient
+ *  Delete patient
  * - Doctor can delete only their own
  * - Nurse can delete any
  */
@@ -340,7 +340,7 @@ router.delete("/:patientId", audit("DELETE_PATIENT"), async (req, res) => {
 });
 
 /**
- * ✅ GET /patients/:patientId/predictions
+ *  GET /patients/:patientId/predictions
  * Fetch prediction history for a specific patient
  */
 router.get(

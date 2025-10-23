@@ -211,56 +211,15 @@ def map_menstrual_features(input: Dict) -> Dict:
     features["RHD280"] = str(features["RHD280"])
     return {col: features.get(col) for col in COLUMN_ORDERS["menstrual"]}
 
-# import pandas as pd
-
-# def map_infertility_features(input: Dict) -> Dict:
-#     features = map_common_features(input)
-
-#     # --- Explicit mapping using already-normalized 'features' ---
-#     features["lead_ugdl"] = features.get("LBXBPB")
-#     features["cadmium_ugl"] = features.get("LBXBCD")
-#     features["mercury_ugl"] = features.get("LBXTHG")
-#     features["selenium_ugl"] = features.get("LBXBSE")
-#     features["manganese_ugl"] = features.get("LBXBMN")
-
-#     # Demographic features
-#     features["age_years"] = features.get("RIDAGEYR")
-#     features["race"] = features.get("race")
-#     features["country_birth"] = features.get("country_birth")
-#     features["marital_status"] = features.get("DMDMARTL")
-
-#     # Reproductive / lifestyle history
-#     features["regular_periods"] = features.get("RHQ305")
-#     features["pelvic_infection"] = features.get("RHQ200")
-#     features["hysterectomy"] = features.get("RHD280")
-#     features["birth_control"] = features.get("RHQ420")
-#     features["female_hormones"] = features.get("RHQ540")
-#     features["last_period_age"] = features.get("RHQ160")
-
-#     # --- Convert to DataFrame for safe dtype cleaning ---
-#     df = pd.DataFrame([{col: features.get(col) for col in COLUMN_ORDERS["infertility"]}])
-
-#     # 1️⃣ Convert booleans → 1/2
-#     df = df.applymap(lambda x: 1 if x is True else (2 if x is False else x))
-
-#     # 2️⃣ Convert "1"/"2" strings → numeric
-#     df = df.apply(pd.to_numeric, errors="ignore")
-
-#     # 3️⃣ Encode object-type columns as category codes
-#     for col in df.select_dtypes("object"):
-#         df[col] = df[col].astype("category").cat.codes
-
-#     # 4️⃣ Return as a dict (like your other mappers)
-#     return df.iloc[0].to_dict()
 
 def map_infertility_features(input: Dict) -> Dict:
     features = map_common_features(input)
     # --- Final order as model expects ---
     tempdf = {col: features.get(col) for col in COLUMN_ORDERS["infertility"]}
     tempdf = preprocess_infertility_for_model(tempdf)
-    print("="*40)
-    print("Temp DF before preprocessing:", tempdf.columns)
-    print("="*40)
+    # print("="*40)
+    # print("Temp DF before preprocessing:", tempdf.columns)
+    # print("="*40)
     return tempdf
 
 # --- Mapper registry ---

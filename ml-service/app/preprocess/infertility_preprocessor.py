@@ -10,7 +10,7 @@ def preprocess_infertility_for_model(raw_input):
         X (pd.DataFrame): fully preprocessed, model-ready feature DataFrame
     """
 
-    # ---------- ACCEPT BOTH SINGLE RECORD OR DF ----------
+    #  ACCEPT BOTH SINGLE RECORD OR DF 
     if isinstance(raw_input, dict):
         df = pd.DataFrame([raw_input])
     elif isinstance(raw_input, pd.DataFrame):
@@ -18,7 +18,7 @@ def preprocess_infertility_for_model(raw_input):
     else:
         raise ValueError("Input must be a dict or pandas DataFrame.")
 
-    # ---------- COLUMN MAP ----------
+    #  COLUMN MAP 
     col_map = {
         'WTSH2YR': 'Blood metal weights',
         'LBXBPB': 'lead_ugdl',
@@ -44,7 +44,7 @@ def preprocess_infertility_for_model(raw_input):
     }
     df.rename(columns=col_map, inplace=True)
 
-    # ---------- FORCE NUMERIC CONVERSION ----------
+    #  FORCE NUMERIC CONVERSION 
     # Convert all metals and numeric fields to float safely
     possible_numeric = [
         'lead_ugdl', 'cadmium_ugl', 'mercury_ugl', 'selenium_ugl', 'manganese_ugl',
@@ -55,7 +55,7 @@ def preprocess_infertility_for_model(raw_input):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # ---------- LLOD IMPUTATION ----------
+    #  LLOD IMPUTATION 
     SQRT2 = np.sqrt(2)
     metal_llod1 = {'lead': 0.05, 'cadmium': 0.07, 'mercury': 0.2, 'selenium': 59.35, 'manganese': 2.21}
     for metal, llod in metal_llod1.items():
@@ -63,7 +63,7 @@ def preprocess_infertility_for_model(raw_input):
         if col in df.columns:
             df[col] = df[col].fillna(llod / SQRT2)
 
-    # ---------- RISK ENCODING ----------
+    #  RISK ENCODING 
     thresholds = {
         'lead_ugdl': {'low': 1.0, 'medium': 2.0},
         'cadmium_ugl': {'low': 0.3, 'medium': 0.5},
@@ -83,7 +83,7 @@ def preprocess_infertility_for_model(raw_input):
         else:
             df[cat_col] = 0
 
-    # ---------- DERIVED FEATURES ----------
+    #  DERIVED FEATURES 
     for col in ['lead_risk', 'cadmium_risk', 'mercury_risk', 'selenium_risk', 'manganese_risk']:
         if col not in df.columns:
             df[col] = 0
@@ -97,7 +97,7 @@ def preprocess_infertility_for_model(raw_input):
     df['high_lead_cadmium'] = ((df['lead_risk'] == 2) & (df['cadmium_risk'] == 2)).astype(int)
     df['low_selenium_high_toxics'] = ((df['selenium_risk'] == 0) & (df['toxic_risk_score'] >= 4)).astype(int)
 
-    # ---------- IMPUTE NON-METAL CATEGORICAL NUMERIC ----------
+    #  IMPUTE NON-METAL CATEGORICAL NUMERIC 
     fill_zeros = [
         'regular_periods', 'pelvic_infection', 'hysterectomy',
         'birth_control', 'female_hormones', 'age_years',
