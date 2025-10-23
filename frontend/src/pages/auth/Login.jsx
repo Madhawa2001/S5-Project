@@ -46,7 +46,7 @@ export default function Login() {
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600">Medical System</h1>
+          <h1 className="text-3xl font-bold text-blue-600">ReproSight</h1>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
         </div>
 

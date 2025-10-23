@@ -98,7 +98,7 @@ export default function Register() {
     <div className="min-h-screen bg-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-blue-600">Medical System</h1>
+          <h1 className="text-3xl font-bold text-blue-600">ReproSight</h1>
           <p className="text-gray-600 mt-1">Create your account</p>
         </div>
 
