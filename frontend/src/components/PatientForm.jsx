@@ -34,14 +34,13 @@ export default function PatientForm({ patientId, initialData }) {
         hadHysterectomy: false,
         ovariesRemoved: false,
         everUsedBirthControlPills: false,
-        everTreatedForPID: false,
-        ageAtLastPeriod: "",
         doctorId: "",
         lead_umolL: "",
         mercury_umolL: "",
         cadmium_umolL: "",
         selenium_umolL: "",
         manganese_umolL: "",
+        doctor: "",
     })
 
     useEffect(() => {
@@ -82,6 +81,7 @@ export default function PatientForm({ patientId, initialData }) {
                 selenium_umolL: initialData.bloodMetals?.[0]?.selenium_umolL || "",
                 manganese_umolL: initialData.bloodMetals?.[0]?.manganese_umolL || "",
             })
+            console.log("Initial form data set:", formData)
         }
     }, [initialData, user?.role])
 
@@ -93,7 +93,7 @@ export default function PatientForm({ patientId, initialData }) {
                 setDoctors(data)
             }
         } catch (err) {
-            console.error("Failed to fetch doctors")
+            console.error("Failed to fetch doctors", err);
         }
     }
 
@@ -146,6 +146,25 @@ export default function PatientForm({ patientId, initialData }) {
                 errors[field] = `${field} cannot be negative`;
             }
         });
+
+        // ✅ Contact number validation
+        if (formData.contactNumber) {
+            const phone = formData.contactNumber.trim();
+            // Allows +94xxxxxxxxx or 0xxxxxxxxx formats
+            const phoneRegex = /^(?:\+94|0)?\d{9}$/;
+            if (!phoneRegex.test(phone)) {
+                errors.contactNumber = "Enter a valid Sri Lankan phone number (e.g. 0712345678 or +94712345678)";
+            }
+        }
+
+        // ✅ Email (Gmail only)
+        if (formData.email) {
+            const email = formData.email.trim();
+            const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+            if (!gmailRegex.test(email)) {
+                errors.email = "Enter a valid Gmail address (e.g. example@gmail.com)";
+            }
+        }
 
         // Blood metal fields (if included)
         if (includeBloodMetals) {
@@ -207,19 +226,56 @@ export default function PatientForm({ patientId, initialData }) {
             //     if (payload[field] !== null) payload[field] = parseInt(payload[field]) || null
             //   })
 
-            if (!includeBloodMetals || !patientId) {
-                ;["lead_umolL", "mercury_umolL", "cadmium_umolL", "selenium_umolL", "manganese_umolL"].forEach(
-                    (field) => delete payload[field]
-                )
+            // Always remove blood metal fields before sending the main patient update.
+            // They will be handled separately.
+            ["lead_umolL", "mercury_umolL", "cadmium_umolL", "selenium_umolL", "manganese_umolL"].forEach(
+                (field) => delete payload[field]
+            )
+
+            console.log("Submitting patient data:", payload)
+
+            if (user?.role === "doctor") {
+                payload.doctorId = user.id;
+            } else if (user?.role === "nurse") {
+                if (!payload.doctorId && selectedDoctorId) {
+                    payload.doctorId = selectedDoctorId;
+                }
             }
 
             if (patientId) {
+                // 🧹 Clean payload: remove all backend-unexpected fields
+                const cleanPayload = { ...payload };
+
+                // ❌ Remove any blood metal fields
+                delete cleanPayload.lead_umolL;
+                delete cleanPayload.mercury_umolL;
+                delete cleanPayload.cadmium_umolL;
+                delete cleanPayload.selenium_umolL;
+                delete cleanPayload.manganese_umolL;
+                delete cleanPayload.bloodMetals; // just in case
+
+                // ❌ Remove fields Prisma auto-manages
+                delete cleanPayload.id;
+                delete cleanPayload.createdAt;
+                delete cleanPayload.updatedAt;
+
+                // ✅ Handle doctor relation properly
+                if (payload.doctorId) {
+                    cleanPayload.doctor = { connect: { id: payload.doctorId } };
+                    delete cleanPayload.doctorId;
+                }
+
+                console.log("🧾 Sending clean payload:", cleanPayload);
+
+                // ✅ Send main patient update
                 const res = await authenticatedFetch(`${VITE_API_URL}/patients/${patientId}`, {
                     method: "PUT",
-                    body: JSON.stringify(payload),
-                })
-                if (!res.ok) throw new Error("Failed to update patient")
+                    body: JSON.stringify(cleanPayload),
+                });
 
+                if (!res.ok) throw new Error("Failed to update patient");
+
+                // ✅ Send blood metals separately (if toggle is on)
                 if (includeBloodMetals) {
                     const bloodPayload = {
                         lead_umolL: Number(formData.lead_umolL) || null,
@@ -227,18 +283,26 @@ export default function PatientForm({ patientId, initialData }) {
                         cadmium_umolL: Number(formData.cadmium_umolL) || null,
                         selenium_umolL: Number(formData.selenium_umolL) || null,
                         manganese_umolL: Number(formData.manganese_umolL) || null,
-                    }
+                    };
+
+                    console.log("🩸 Sending blood metals:", bloodPayload);
+
                     try {
                         await authenticatedFetch(`${VITE_API_URL}/bloodMetals/${patientId}`, {
                             method: "POST",
                             body: JSON.stringify(bloodPayload),
-                        })
+                        });
                     } catch (err) {
-                        console.warn("Failed to update blood metals:", err)
+                        console.warn("⚠️ Failed to update blood metals:", err);
                     }
                 }
-                setSuccess("Patient updated successfully")
+
+                setSuccess("Patient updated successfully");
+                setTimeout(() => {
+                    navigate(user?.role === "nurse" ? "/nurse/patients" : "/doctor/patients")
+                }, 1500)
             } else {
+                if (payload.doctor) delete payload.doctor;
                 const res = await authenticatedFetch(`${VITE_API_URL}/patients`, {
                     method: "POST",
                     body: JSON.stringify(payload),
@@ -312,10 +376,10 @@ export default function PatientForm({ patientId, initialData }) {
             {/* Contact Info */}
             <Section title="Contact Information">
                 <div className="text-black">
-                    <Input label="Contact Number" name="contactNumber" value={formData.contactNumber} onChange={handleChange} />
+                    <Input label="Contact Number" name="contactNumber" value={formData.contactNumber} onChange={handleChange} error={validationErrors.contactNumber} />
                 </div>
                 <div className="text-black">
-                    <Input label="Email" type="email" name="email" value={formData.email} onChange={handleChange} />
+                    <Input label="Email" type="email" name="email" value={formData.email} onChange={handleChange} error={validationErrors.email} />
                 </div>
                 <div className="text-black">
                     <Textarea label="Address" name="address" value={formData.address} onChange={handleChange} />
@@ -412,12 +476,19 @@ export default function PatientForm({ patientId, initialData }) {
             {user?.role === "nurse" && (
                 <Section title="Assign Doctor">
                     <div className="text-black">
-                        <Select
+                        <select
                             name="doctorId"
-                            value={formData.doctorId}
+                            value={formData.doctorId || ""}
                             onChange={handleChange}
-                            options={["Unassigned", ...doctors.map((d) => `${d.name} (${d.email})`)]}
-                        />
+                            className="w-full p-2 border border-gray-300 rounded-md"
+                        >
+                            <option value="">Unassigned</option>
+                            {doctors.map((d) => (
+                                <option key={d.id} value={d.id}>
+                                    {d.name} ({d.email})
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </Section>
             )}

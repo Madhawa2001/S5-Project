@@ -150,8 +150,9 @@ export default function Requests() {
                     <div className="text-sm text-blue-700">
                       <p><span className="font-medium">Email:</span> {req.email}</p>
                       <p><span className="font-medium">Request Date:</span> {req.requestDate}</p>
+                      <p><span className="font-medium">Role:</span> {req.role || req.selectedRole}</p>
                       {/* 🆕 Role Dropdown */}
-                      <div className="mt-2">
+                      {/* <div className="mt-2">
                         <label className="text-sm text-blue-700 font-medium mr-2">Assign Role:</label>
                         <select
                           className="border rounded-md p-1 text-sm"
@@ -163,7 +164,7 @@ export default function Requests() {
                           <option value="nurse">Nurse</option>
                           <option value="admin">Admin</option>
                         </select>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                   <div className="flex gap-2">
