@@ -389,7 +389,7 @@ export default function Predictions() {
               // Flatten features + values
               const shapChartData = subModelData.features
                 .map((f, i) => ({
-                  feature: f.replace("cont_", "").replace("cat", "").replace("pass_", ""),
+                  feature: f.replace("cont__", "").replace("cat__", "").replace("pass_", "").replace("num__", ""),
                   value: subModelData.values[i],
                 }))
                 .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
