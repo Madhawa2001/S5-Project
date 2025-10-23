@@ -16,7 +16,7 @@ const Navbar = () => {
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-blue-600">Medical System</h1>
+          <h1 className="text-2xl font-bold text-blue-600">ReproSight</h1>
         </div>
 
         <div className="flex items-center gap-4">

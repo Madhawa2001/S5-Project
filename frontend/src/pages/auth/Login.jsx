@@ -46,7 +46,7 @@ export default function Login() {
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600">Medical System</h1>
+          <h1 className="text-3xl font-bold text-blue-600">ReproSight</h1>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
         </div>
 
@@ -133,17 +133,17 @@ export default function Login() {
         </form>
 
         {/* Divider */}
-        <div className="relative my-6">
+        {/* <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-blue-200"></div>
           </div>
           <div className="relative flex justify-center text-sm text-blue-600 bg-white px-2">
             Or continue with
           </div>
-        </div>
+        </div> */}
 
         {/* Google Button */}
-        <button
+        {/* <button
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading}
@@ -155,7 +155,7 @@ export default function Login() {
             className="w-5 h-5"
           />
           Sign in with Google
-        </button>
+        </button> */}
 
         {/* Register & Forgot password */}
         {/* {(role === "doctor" || role === "nurse") && ( */}
@@ -169,14 +169,14 @@ export default function Login() {
           </div>
         {/* )} */}
 
-        <div className="text-center mt-4">
+        {/* <div className="text-center mt-4">
           <a
             href="#"
             className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
           >
             Forgot password?
           </a>
-        </div>
+        </div> */}
       </div>
     </div>
   );
