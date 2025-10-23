@@ -141,7 +141,7 @@ async def sensitivity(model: str, input: SensitivityInput, user=Depends(verify_j
             mapper_key = f"{model}_{sm}"   
             X = build_feature_df(input.features, mapper_key)
 
-            # ✅ only hormone models get preprocessed
+            # only hormone models get preprocessed
             if model == "hormone":
                 X = preprocess_domain_rules(X)
 
@@ -490,9 +490,7 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
 
     results = {}
 
-    # -------------------------------------------------------------
-    # --- Helper: unwrap deeply nested pipelines -----------------
-    # -------------------------------------------------------------
+    # Helper: unwrap deeply nested pipelines
     def unwrap_model(obj):
         """Recursively unwrap pipelines and nested model containers to get the final estimator."""
         if isinstance(obj, Pipeline):
@@ -505,19 +503,17 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
             return unwrap_model(obj.model)
         return obj
 
-    # -------------------------------------------------------------
-    # --- Core: SHAP computation per submodel --------------------
-    # -------------------------------------------------------------
+    #  Core: SHAP computation per submodel 
     def compute_shap_for_model(clf, mapper_key: str, features: Dict):
         try:
-            # --- Step 1: Build input DataFrame ---
+            #  Step 1: Build input DataFrame 
             X = build_feature_df(features, mapper_key)
             if "hormone" in mapper_key:
                 X = preprocess_domain_rules(X)
 
             pipeline = clf.model  # e.g. your JoblibModel wrapper exposes .model
 
-            # --- Step 2: Identify preprocessor & model -------------
+            #  Step 2: Identify preprocessor & model
             preprocessor, model_obj = None, None
             try:
                 if isinstance(pipeline, Pipeline):
@@ -531,36 +527,36 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
                 else:
                     model_obj = pipeline
             except Exception as e:
-                print(f"⚠️ Error extracting preprocessor/model for {mapper_key}: {e}")
+                print(f" Error extracting preprocessor/model for {mapper_key}: {e}")
                 model_obj = unwrap_model(pipeline)
 
-            # --- Step 3: Transform input if preprocessor exists -----
+            #  Step 3: Transform input if preprocessor exists 
             X_transformed = X
             if preprocessor is not None and hasattr(preprocessor, "transform"):
                 try:
                     X_transformed = preprocessor.transform(X)
                 except Exception as e:
-                    print(f"⚠️ Preprocessor transform failed for {mapper_key}: {e}")
+                    print(f" Preprocessor transform failed for {mapper_key}: {e}")
 
-            # --- Step 4: Get feature names (post-transform) ---------
+            #  Step 4: Get feature names (post-transform)
             if preprocessor is not None and hasattr(preprocessor, "get_feature_names_out"):
                 feature_names = preprocessor.get_feature_names_out()
             else:
                 feature_names = X.columns
 
-            # --- Step 5: Unwrap model completely --------------------
+            # Step 5: Unwrap model completely 
             model_obj = unwrap_model(model_obj)
             model_name = str(type(model_obj)).lower()
-            print(f"🧩 Final model for {mapper_key}: {model_obj.__class__.__name__}")
+            print(f"Final model for {mapper_key}: {model_obj.__class__.__name__}")
 
-            # --- Step 6: Compute SHAP values ------------------------
+            # Step 6: Compute SHAP values 
             try:
                 if any(k in model_name for k in ["xgb", "xgboost", "lightgbm", "randomforest", "gradientboosting"]):
                     explainer = shap.TreeExplainer(model_obj)
                     shap_values = explainer.shap_values(X_transformed)
                     expected_value = explainer.expected_value
 
-                    # ✅ Handle classifiers (list of arrays)
+                    #  Handle classifiers (list of arrays)
                     if isinstance(shap_values, list):
                         # For binary classifiers → take positive class (1)
                         shap_values = shap_values[1] if len(shap_values) > 1 else shap_values[0]
@@ -576,7 +572,7 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
                     expected_value = float(np.mean(model_obj.predict(bg)))
 
             except Exception as e:
-                print(f"⚠️ TreeExplainer failed for {mapper_key}, fallback to KernelExplainer: {e}")
+                print(f" TreeExplainer failed for {mapper_key}, fallback to KernelExplainer: {e}")
                 bg = X_transformed[:30] if len(X_transformed) > 30 else X_transformed
                 explainer = shap.KernelExplainer(model_obj.predict, bg)
                 shap_values = explainer.shap_values(X_transformed[:1])
@@ -594,12 +590,10 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
             }
 
         except Exception as e:
-            print(f"❌ SHAP computation failed for {mapper_key}: {e}")
+            print(f" SHAP computation failed for {mapper_key}: {e}")
             return {"error": str(e)}
 
-    # -------------------------------------------------------------
-    # --- Multi-model support ------------------------------------
-    # -------------------------------------------------------------
+    #  Multi-model support 
     if isinstance(MODELS[model], dict):
         for sm, clf in MODELS[model].items():
             mapper_key = f"{model}_{sm}"
@@ -608,9 +602,7 @@ async def shap_analysis(model: str, input: PredictInput, user=Depends(verify_jwt
         clf = MODELS[model]
         results[model] = compute_shap_for_model(clf, model, input.features)
 
-    # -------------------------------------------------------------
-    # --- Debug / return ------------------------------------------
-    # -------------------------------------------------------------
+    # Debug / return 
     print("=" * 30)
     print({"model": model, "shap": results})
     print("=" * 30)
