@@ -12,6 +12,9 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
+  BarChart,
+  Bar,
+  Cell,
 } from "recharts";
 import { FiDownload } from "react-icons/fi";
 
@@ -112,6 +115,14 @@ export default function Predictions() {
             pNum === 1
               ? "Irregular menstrual cycle"
               : "Regular menstrual cycle";
+        }
+      }
+
+      // Round numeric prediction for menopause model to an integer
+      if (selectedModel === "menopause" && data && data.prediction != null) {
+        const num = Number(data.prediction);
+        if (!Number.isNaN(num)) {
+          data.prediction = Math.round(num);
         }
       }
 
@@ -550,35 +561,105 @@ export default function Predictions() {
           <h2 className="text-xl font-semibold text-blue-800 mb-4">
             SHAP Feature Importance
           </h2>
-          {shapChartData.length > 0 ? (
-            <div style={{ width: "100%", height: 400 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={shapChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="feature"
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                  />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="value">
-                    {shapChartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.value > 0 ? "#3b82f6" : "#ef4444"}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
+
+          {!shapResult.shap || Object.keys(shapResult.shap).length === 0 ? (
             <p className="text-gray-600">No SHAP data available.</p>
+          ) : (
+            Object.entries(shapResult.shap).map(
+              ([subModelKey, subModelData]) => {
+                // Flatten features + values
+                const shapChartData = subModelData.features
+                  .map((f, i) => ({
+                    feature: f
+                      .replace("cont__", "")
+                      .replace("cat__", "")
+                      .replace("pass_", "")
+                      .replace("num__", ""),
+                    value: subModelData.values[i],
+                  }))
+                  .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+                const maxVal = Math.max(
+                  ...shapChartData.map((d) => Math.abs(d.value))
+                );
+
+                const colorScale = (v) => {
+                  const ratio = Math.abs(v) / maxVal;
+                  if (v > 0) return `rgba(239, 68, 68, ${0.5 + ratio / 2})`; // red
+                  if (v < 0) return `rgba(59, 130, 246, ${0.5 + ratio / 2})`; // blue
+                  return "#9ca3af";
+                };
+
+                return (
+                  <div key={subModelKey} className="mb-8">
+                    <h3 className="text-lg font-semibold text-blue-700 mb-2">
+                      {subModelKey.replace("hormone_", "").toUpperCase()}
+                    </h3>
+                    <div className="w-full overflow-x-auto">
+                      <div className="min-w-[500px]">
+                        <ResponsiveContainer width="100%" height={350}>
+                          <BarChart
+                            data={shapChartData}
+                            layout="vertical"
+                            margin={{
+                              top: 20,
+                              right: 40,
+                              left: 120,
+                              bottom: 20,
+                            }}
+                          >
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              opacity={0.2}
+                            />
+                            <XAxis
+                              type="number"
+                              tickFormatter={(v) => v.toFixed(2)}
+                              label={{
+                                value: "SHAP value (impact on model output)",
+                                position: "bottom",
+                                offset: -5,
+                              }}
+                            />
+                            <YAxis
+                              dataKey="feature"
+                              type="category"
+                              width={150}
+                              tick={{ fontSize: 12 }}
+                            />
+                            <Tooltip
+                              formatter={(v) => [v.toFixed(4), "SHAP Value"]}
+                              contentStyle={{
+                                backgroundColor: "white",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "8px",
+                              }}
+                            />
+                            <Bar
+                              dataKey="value"
+                              barSize={22}
+                              radius={[8, 8, 8, 8]}
+                              isAnimationActive={true}
+                            >
+                              {shapChartData.map((entry, index) => (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={colorScale(entry.value)}
+                                />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+            )
           )}
         </div>
       )}
+      <br />
     </div>
   );
 }
