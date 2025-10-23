@@ -6,7 +6,7 @@ import { verifyToken, requireRole } from "../middleware/auth.js";
 const router = express.Router(verifyToken, requireRole("admin"));
 const prisma = new PrismaClient();
 
-// ✅ List users pending approval (with roles)
+// List users pending approval (with roles)
 router.get("/pending", async (req, res) => {
   try {
     const pending = await prisma.user.findMany({
@@ -33,7 +33,7 @@ router.get("/pending", async (req, res) => {
 
     res.json(formatted);
   } catch (error) {
-    console.error("❌ Error fetching pending users:", error);
+    console.error(" Error fetching pending users:", error);
     res.status(500).json({
       error: "Failed to fetch pending users",
       details: String(error),
@@ -41,7 +41,7 @@ router.get("/pending", async (req, res) => {
   }
 });
 
-// ✅ Approve a user
+// Approve a user
 router.post("/approve/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
@@ -60,7 +60,7 @@ router.post("/approve/:userId", async (req, res) => {
   }
 });
 
-// ✅ Assign role to a user
+// Assign role to a user
 router.post("/assign-role", async (req, res) => {
   const { userId, roleName } = req.body;
   if (!userId || !roleName)
@@ -89,7 +89,7 @@ router.post("/assign-role", async (req, res) => {
   }
 });
 
-// ✅ View access logs
+// View access logs
 router.get("/logs", async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page || "1"));
   const pageSize = Math.min(100, parseInt(req.query.pageSize || "50"));
@@ -103,7 +103,7 @@ router.get("/logs", async (req, res) => {
   res.json({ page, pageSize, logs });
 });
 
-// ✅ Get all users (admin only)
+// Get all users (admin only)
 router.get("/users", verifyToken, requireRole("admin"), async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -130,7 +130,7 @@ router.get("/users", verifyToken, requireRole("admin"), async (req, res) => {
 
     res.json(formatted);
   } catch (error) {
-    console.error("❌ Error fetching all users:", error);
+    console.error(" Error fetching all users:", error);
     res.status(500).json({
       error: "Failed to fetch users",
       details: String(error),

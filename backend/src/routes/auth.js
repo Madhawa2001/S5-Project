@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 // apply rate limit to auth endpoints
 router.use(authLimiter);
 
-// ✅ Register (manual doctor signup -> unauthorized role)
+// Register (manual doctor signup -> unauthorized role)
 router.post("/register", async (req, res) => {
   const { email, password, name, role: roleName } = req.body;
 
@@ -58,7 +58,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ✅ Login
+// Login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const user = await prisma.user.findUnique({
@@ -80,7 +80,7 @@ router.post("/login", async (req, res) => {
 });
 
 /**
- * ✅ GET /auth/me
+ *  GET /auth/me
  * Returns the currently authenticated user's basic info
  */
 router.get("/me", verifyToken, async (req, res) => {
@@ -121,7 +121,7 @@ router.get("/me", verifyToken, async (req, res) => {
 });
 
 /**
- * ✅ POST /auth/logout
+ *  POST /auth/logout
  * Clears the auth cookie or invalidates the token (depending on your setup)
  */
 router.post("/logout", async (req, res) => {
@@ -141,7 +141,7 @@ router.post("/logout", async (req, res) => {
   }
 });
 
-// ✅ Google OAuth (start)
+// Google OAuth (start)
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
@@ -175,7 +175,7 @@ router.post("/refresh", async (req, res) => {
   }
 });
 
-// ✅ Google callback
+//  Google callback
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
