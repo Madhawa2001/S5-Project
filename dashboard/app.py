@@ -389,32 +389,6 @@ def show_stakeholder_dashboard():
             fig_menarche_box.update_xaxes(categoryorder='category ascending')
             st.plotly_chart(fig_menarche_box, use_container_width=True)
             st.info("This chart helps explore if metal exposure levels differ by the age of first menstruation. You can look for a trend (e.g., rising or falling) in the boxes as age increases.")
-        # if metal_menstrual:
-        #     fig = go.Figure()
-
-        #     # For each category ('Yes', 'No'), we'll add a violin and a box plot
-        #     for status in df['regular_periods'].unique():
-        #         # Filter data for the specific category
-        #         df_filtered = df[df['regular_periods'] == status]
-                
-        #         # Add the violin plot (the "cloud")
-        #         fig.add_trace(go.Violin(
-        #             x=df_filtered['regular_periods'],
-        #             y=df_filtered[metal_menstrual],
-        #             name=status,
-        #             box_visible=True, # Add a box plot inside the violin
-        #             meanline_visible=True, # Show the mean line
-        #             points='all', # Show individual data points (the "rain")
-        #             jitter=0.3,
-        #             pointpos=-1.8
-        #         ))
-            
-        #     fig.update_layout(
-        #         title_text=f"Raincloud Plot: Distribution of {metal_menstrual} for Regular vs. Irregular Cycles",
-        #         xaxis_title="Regular Menstrual Periods",
-        #         showlegend=False # Hide legend as the x-axis already provides the labels
-        #     )
-        #     st.plotly_chart(fig, use_container_width=True)    
 
             
 
