@@ -10,15 +10,28 @@ ReproSight is a comprehensive clinical analytics platform that investigates the 
 S5-Project/
 ├── backend/
 ├── frontend/
-├── ml-service
-├── dashboard/                              # Interactive Streamlit dashboard
+├── ml-service/
+├── dashboard/                              
 ├── Models/                                # Machine learning models
-│   ├── Hormone level prediciton/         # Hormone level prediction models
-│   ├── infertility prediction/           # infertility prediction model
-│   ├── Menopause prediction/             # Menopause onset prediction model
-│   └── Menstrual prediction/             # Menstrual irregularity prediction model
+│   ├── Hormone level prediciton/         
+│   ├── infertility prediction/           
+│   ├── Menopause prediction/             
+│   └── Menstrual prediction/             
 └── README.md                              
 ```
+## Backend Services
+	-	Developed using FastAPI (for ML service) and Node.js (Express) (for core logic and APIs).
+	-	Uses PostgreSQL with Prisma ORM for relational data management.
+	-	Implements JWT Authentication and role-based access for security.
+	-	Hosts ML models as microservices for scalability and modularity.
+	-	Deployed on Railway for reliable cloud integration.
+
+## Frontend Service
+	-	Built with React + Vite for a fast, modular, and responsive interface.
+	-	Styled using Tailwind CSS for clean and consistent UI.
+	-	Implements Axios for secure API requests and React Router for navigation.
+	-	Provides separate dashboards for Admin, Doctor, and Nurse roles.
+	-	Deployed on Netlify for stable and global accessibility.
 
 ## 🔬 Models & Features
 
@@ -109,13 +122,36 @@ All datasets are from NHANES 2015-2016 cycle.
 
 
 
-## 🛠️ Technologies Used
+## Technologies Used
 
+### Frontend
+	-	React + Vite – for fast, modular, and modern UI development.
+	-	Tailwind CSS – for responsive and consistent styling.
+	-	Axios – for secure API communication.
+	-	React Router – for role-based navigation.
+	-	Netlify – for frontend hosting and continuous deployment.
 
+### Backend
+	-	Node.js (Express) – for REST API development and business logic.
+	-	FastAPI – for ML model serving and API endpoints.
+	-	PostgreSQL – for relational data storage.
+	-	Prisma ORM – for type-safe database operations and schema management.
+	-	JWT Authentication – for secure user login and role-based access.
+	-	Railway – for backend and database hosting.
 
-## 👥 Team
+### Machine Learning & Data Science
+	-	Python – for data preprocessing, modeling, and service logic.
+	-	scikit-learn, XGBoost, LightGBM – for model training and evaluation.
+	-	SHAP – for explainable AI and model interpretation.
+	-	Pandas, NumPy, Matplotlib, Seaborn – for analysis and visualization.
+	-	Streamlit – for building the interactive EDA dashboard.
 
+### Testing & Tools
+	-	Postman – for API testing and debugging.
+	-	Selenium – for frontend automation testing.
+	-	GitHub – for version control and team collaboration.
+   
+## Team
 - Sathsarani Amarasinghe
 - Madhawa Abhayawickrama
 - Abishan Vasanthan
----
