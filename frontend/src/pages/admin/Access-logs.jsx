@@ -1,0 +1,112 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "../../contexts/AuthContext"
+
+export default function AccessLogs() {
+  const navigate = useNavigate()
+  const { logout, user, authenticatedFetch, isLoggedIn } = useAuth()
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const VITE_API_URL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login")
+      return
+    }
+    if (user?.role !== "admin") {
+      navigate("/home")
+      return
+    }
+    fetchLogs()
+  }, [user, isLoggedIn, navigate])
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true)
+      const response = await authenticatedFetch(`${VITE_API_URL}/admin/logs`)
+      if (response.ok) {
+        const data = await response.json()
+        setLogs(data.logs || [])
+      } else {
+        throw new Error("Failed to fetch logs")
+      }
+    } catch (err) {
+      console.error("Error fetching logs:", err)
+      setError("Failed to load access logs")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate("/")
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-blue-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-blue-800">Access Logs</h1>
+            <p className="text-sm text-blue-600">System activity and user access history</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Logs Table */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-lg shadow-md border border-blue-200 p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-center">
+              {error}
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="text-center py-12">
+              <svg className="mx-auto h-12 w-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-blue-900">No logs found</h3>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-blue-200">
+                <thead className="bg-blue-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Timestamp</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">User ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">Resource</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-blue-700 uppercase tracking-wider">IP Address</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-blue-100">
+                  {logs.map((log) => (
+                    <tr key={log.id} className="hover:bg-blue-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-700">{new Date(log.createdAt).toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-700">{log.userId || "N/A"}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">{log.action}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-700">{log.resource || "N/A"}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-700">{log.ipAddress || "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

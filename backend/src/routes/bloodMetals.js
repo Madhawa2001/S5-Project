@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 router.use(verifyToken, requireRole("doctor", "nurse"));
 
 /**
- * ✅ Add a new blood metals report for a patient
+ * Add a new blood metals report for a patient
  * - Doctor can add for their own patients
  * - Nurse can add for any patient
  */
@@ -32,7 +32,7 @@ router.post("/:patientId", audit("CREATE_BLOODMETALS"), async (req, res) => {
     });
     if (!patient) return res.status(404).json({ error: "Patient not found" });
 
-    // 🔹 Doctors can only modify their own patients
+    //  Doctors can only modify their own patients
     if (userRoles.includes("doctor") && patient.doctorId !== req.user.userId) {
       return res.status(403).json({ error: "Forbidden" });
     }
@@ -48,13 +48,13 @@ router.post("/:patientId", audit("CREATE_BLOODMETALS"), async (req, res) => {
       },
     });
 
-    // 🔹 Fetch full patient with features
+    //  Fetch full patient with features
     const fullPatient = await prisma.patient.findUnique({
       where: { id: patientId },
       include: { bloodMetals: { orderBy: { createdAt: "desc" } } },
     });
 
-    // 🔹 Auto-trigger prediction service
+    //  Auto-trigger prediction service
     try {
       const endpoints = ["hormone", "infertility", "menstrual", "menopause"];
       await Promise.all(
@@ -79,7 +79,7 @@ router.post("/:patientId", audit("CREATE_BLOODMETALS"), async (req, res) => {
 });
 
 /**
- * ✅ Get all blood metals reports for a patient
+ * Get all blood metals reports for a patient
  * - Doctor: only their patients
  * - Nurse: any patient
  */
@@ -111,7 +111,7 @@ router.get("/:patientId", audit("LIST_BLOODMETALS"), async (req, res) => {
 });
 
 /**
- * ✅ Delete a blood metals record
+ *  Delete a blood metals record
  * - Doctor: can delete only their own patient's data
  * - Nurse: can delete any
  */
